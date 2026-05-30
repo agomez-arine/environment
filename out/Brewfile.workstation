@@ -1,0 +1,27 @@
+# Generated from manifest.yaml — do not edit by hand.
+# Profile: workstation, target: brew on macOS
+
+# ─── formulae ───
+brew "tree-sitter-cli"
+brew "parallel"
+brew "sesh"
+brew "wget"
+
+# ─── casks ───
+cask "bruno"
+cask "disk-inventory-x"
+cask "ghostty"
+cask "obsidian"
+cask "zed"
+cask "font-jetbrains-mono-nerd-font"
+
+# ─── IT/Jamf-managed (NOT installed by brew) ───
+# cask "maccy"  # it_managed: installed by IT/Jamf
+# cask "docker"  # it_managed: installed by IT/Jamf
+# cask "google-chrome"  # it_managed: installed by IT/Jamf
+# cask "google-drive"  # it_managed: installed by IT/Jamf
+# cask "slack"  # it_managed: installed by IT/Jamf
+# cask "cursor"  # it_managed: installed by IT/Jamf
+# cask "visual-studio-code"  # it_managed: installed by IT/Jamf
+# cask "firefox"  # it_managed: installed by IT/Jamf
+# cask "pgadmin4"  # it_managed: installed by IT/Jamf

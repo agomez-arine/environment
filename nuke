@@ -1,0 +1,189 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.11"
+# dependencies = ["pyyaml>=6.0"]
+# ///
+"""
+nuke — remove anything installed but NOT declared in the manifest.
+
+This is the inverse of `sync`. Sync makes the system match the manifest by
+INSTALLING what's missing. Nuke makes the system match the manifest by
+REMOVING what's extra.
+
+Usage:
+  ./nuke                     dry-run (default — print what would be removed)
+  ./nuke --execute           actually run brew uninstall / mise uninstall
+  ./nuke --profile work      restrict to just one profile
+  ./nuke --include-orphan-casks  include orphan brew casks (default skips them
+                                 because casks often lock files in /Applications/)
+
+Exits 0 on success. Exits 1 if --execute hit an error.
+"""
+
+from __future__ import annotations
+import argparse
+import subprocess
+import sys
+from pathlib import Path
+import yaml
+
+
+SCRIPT_DIR = Path(__file__).parent.resolve()
+MANIFEST_PATH = SCRIPT_DIR / "manifest.yaml"
+MARKER_DIR = Path.home() / ".config" / "environment"
+
+
+def detect_os() -> str:
+    import platform
+    return "mac" if platform.system() == "Darwin" else "linux"
+
+
+def detect_active_profiles(profile_arg: str | None) -> set[str]:
+    if profile_arg:
+        active = {profile_arg}
+    else:
+        active = set()
+        if MARKER_DIR.is_dir():
+            for f in MARKER_DIR.iterdir():
+                if f.name.startswith("profile-"):
+                    active.add(f.name[len("profile-"):])
+    active.add("base")
+    manifest = yaml.safe_load(MANIFEST_PATH.read_text())
+    profiles = manifest.get("profiles", {})
+    resolved: set[str] = set()
+    def walk(p: str):
+        if p in resolved or p not in profiles:
+            return
+        resolved.add(p)
+        for req in profiles[p].get("requires", []) or []:
+            walk(req)
+    for p in active:
+        walk(p)
+    return resolved
+
+
+def run(cmd: list[str]) -> str:
+    try:
+        return subprocess.check_output(cmd, text=True, stderr=subprocess.DEVNULL)
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return ""
+
+
+def installed_brew_leaves() -> set[str]:
+    out = run(["brew", "leaves"])
+    return {line.split("/")[-1] for line in out.strip().splitlines() if line}
+
+
+def installed_brew_casks() -> set[str]:
+    out = run(["brew", "list", "--cask"])
+    return set(out.strip().splitlines())
+
+
+def installed_mise_tools() -> set[str]:
+    out = run(["mise", "ls", "--installed"])
+    tools = set()
+    for line in out.strip().splitlines():
+        parts = line.split()
+        if parts:
+            tools.add(parts[0])
+    return tools
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--execute", action="store_true", help="actually run uninstalls (default: dry-run)")
+    ap.add_argument("--profile", help="restrict to a single profile")
+    ap.add_argument("--include-orphan-casks", action="store_true",
+                    help="also remove orphan brew casks (default: skip — casks often lock /Applications/)")
+    args = ap.parse_args()
+
+    target_os = detect_os()
+    active = detect_active_profiles(args.profile)
+    manifest = yaml.safe_load(MANIFEST_PATH.read_text())
+    profiles = manifest.get("profiles", {})
+    registry = manifest.get("registry", {})
+
+    declared_brew_formula = set()
+    declared_brew_cask = set()
+    declared_mise = set()
+    for prof_name in active:
+        prof = profiles.get(prof_name, {})
+        for pkg in prof.get("packages", []) or []:
+            name = pkg if isinstance(pkg, str) else pkg.get("name")
+            entry = registry.get(name)
+            if not entry:
+                continue
+            entry_os = entry.get("os", ["mac", "linux"])
+            if isinstance(entry_os, str):
+                entry_os = [entry_os]
+            if target_os not in entry_os:
+                continue
+            t = entry.get("type")
+            if t == "mise":
+                declared_mise.add(name)
+            elif t == "brew":
+                declared_brew_formula.add(name)
+            elif t == "cask":
+                declared_brew_cask.add(name)
+
+    actual_brew = installed_brew_leaves()
+    actual_casks = installed_brew_casks()
+    actual_mise = installed_mise_tools()
+
+    orphan_brew = actual_brew - declared_brew_formula - declared_brew_cask
+    orphan_cask = actual_casks - declared_brew_cask - declared_brew_formula
+    orphan_mise = actual_mise - declared_mise
+
+    mode = "EXECUTE" if args.execute else "DRY-RUN"
+    print(f"═══ nuke ({mode}, target={target_os}, profiles: {','.join(sorted(active))}) ═══\n")
+
+    actions: list[tuple[str, list[str]]] = []
+    if orphan_brew:
+        for f in sorted(orphan_brew):
+            actions.append((f"brew uninstall {f}", ["brew", "uninstall", "--ignore-dependencies", f]))
+    if args.include_orphan_casks and orphan_cask:
+        for c in sorted(orphan_cask):
+            actions.append((f"brew uninstall --cask {c}", ["brew", "uninstall", "--cask", c]))
+    elif orphan_cask:
+        print("  Orphan casks (NOT removed by default — pass --include-orphan-casks to include):")
+        for c in sorted(orphan_cask):
+            print(f"    - {c}")
+        print()
+    if orphan_mise:
+        for m in sorted(orphan_mise):
+            actions.append((f"mise uninstall {m}", ["mise", "uninstall", "-a", m]))
+
+    if not actions:
+        print("  Nothing to remove. System matches manifest.")
+        return
+
+    failed = []
+    for label, cmd in actions:
+        if args.execute:
+            print(f"  → {label}")
+            r = subprocess.run(cmd, capture_output=True, text=True)
+            if r.returncode != 0:
+                failed.append((label, r.stderr.strip()))
+        else:
+            print(f"  [dry-run] {label}")
+
+    if args.execute:
+        print()
+        print("  Running brew autoremove...")
+        subprocess.run(["brew", "autoremove"])
+        if failed:
+            print()
+            print(f"  ✗ {len(failed)} actions failed:")
+            for label, err in failed:
+                print(f"    - {label}: {err.splitlines()[0] if err else '(no output)'}")
+            sys.exit(1)
+        print()
+        print("  ✓ nuke complete")
+    else:
+        print()
+        print(f"  Dry-run: {len(actions)} actions would be taken.")
+        print("  Re-run with --execute to apply.")
+
+
+if __name__ == "__main__":
+    main()

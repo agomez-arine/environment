@@ -1,0 +1,38 @@
+# Generated from manifest.yaml — do not edit by hand.
+# Profile: workstation, target OS: mac
+
+[tools]
+terraform = "latest"
+terragrunt = "latest"
+bun = "latest"
+go = "latest"
+sd = "latest"
+dust = "latest"
+delta = "latest"
+hyperfine = "latest"
+just = "latest"
+lazygit = "latest"
+lefthook = "latest"
+gitleaks = "latest"
+shfmt = "latest"
+shellcheck = "latest"
+zizmor = "latest"
+lua-language-server = "latest"
+act = "latest"
+fastfetch = "latest"
+k6 = "latest"
+typst = "latest"
+uv = "latest"
+tflint = "latest"
+opencode = "latest"
+pandoc = "latest"
+pnpm = "latest"
+mas = "latest"
+git-lfs = "latest"
+rust = "stable"
+
+[settings]
+experimental = true
+auto_install = true
+lockfile = true
+minimum_release_age = "7d"   # supply-chain mitigation: refuse versions released <7 days ago

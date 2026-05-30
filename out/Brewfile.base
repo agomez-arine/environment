@@ -1,0 +1,7 @@
+# Generated from manifest.yaml — do not edit by hand.
+# Profile: base, target: brew on macOS
+
+# ─── formulae ───
+brew "btop"
+brew "tree"
+

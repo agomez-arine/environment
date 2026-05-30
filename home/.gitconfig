@@ -1,0 +1,23 @@
+[core]
+    editor = nvim
+    pager = delta
+
+[interactive]
+    diffFilter = delta --color-only
+
+[delta]
+    navigate = true
+    side-by-side = true
+
+[merge]
+    conflictstyle = diff3
+
+[init]
+    defaultBranch = main
+
+[pull]
+    rebase = true
+
+# Identity lives in local/gitconfig.local (gitignored, machine-specific)
+[include]
+    path = ~/environment/local/gitconfig.local

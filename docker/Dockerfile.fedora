@@ -1,0 +1,18 @@
+FROM fedora:41
+
+RUN dnf install -y \
+      zsh \
+      git \
+      curl \
+      sudo \
+      tmux \
+      findutils \
+    && dnf clean all
+
+RUN useradd -m -s /bin/zsh tester && \
+    echo "tester ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+
+USER tester
+WORKDIR /home/tester
+
+CMD ["/bin/zsh"]

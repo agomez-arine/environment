@@ -1,0 +1,32 @@
+# Per-machine private overlay (identity, secrets, work-only fns, machine notes)
+local/
+
+# Secrets / credentials — NEVER track these even if a managed config dir
+# pulls them in. Tool configs (config.yml, btop.conf, etc.) are tracked, but
+# the auth/token/key/session siblings that live next to them are not.
+# gh OAuth tokens:
+home/.config/gh/hosts.yml
+# atuin encryption key + sync session token:
+home/.config/atuin/key
+home/.config/atuin/session
+**/*.key
+**/*credentials*
+**/.netrc
+
+# nvim runtime
+home/.config/nvim/lazy-lock.json
+home/.config/nvim/.luarc.json
+home/.config/nvim/spell/*.spl
+home/.config/nvim/spell/*.add
+
+# zsh plugins are git-cloned at bootstrap; not tracked in this repo
+home/.config/zsh/plugins/
+
+# Leftover nvim config backup from the LazyVim → kickstart migration
+home/.config/nvim-lazyvim-backup/
+
+# Brew lock files we don't pin
+*.lock
+
+# OS
+.DS_Store

@@ -1,0 +1,218 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.11"
+# dependencies = ["pyyaml>=6.0"]
+# ///
+"""
+verify — diff between what the manifest declares and what's installed.
+
+Categories of findings:
+  ORPHAN     installed (brew/mise) but NOT in manifest
+  MISSING    in manifest but NOT installed
+  DUPLICATE  in BOTH brew and mise (manifest only declares one)
+  OK         declared and installed via the right backend
+  SKIPPED    declared os: doesn't match this machine
+  IT-MANAGED cask flagged it_managed (installed/owned outside brew)
+
+Exits 0 if no problems, 1 if anything's off.
+
+Usage:
+  ./verify                # all profiles
+  ./verify --profile work # only check work-active profiles
+  ./verify --quiet        # only orphans + missing
+"""
+
+from __future__ import annotations
+import argparse
+import subprocess
+import sys
+from pathlib import Path
+import yaml
+
+
+SCRIPT_DIR = Path(__file__).parent.resolve()
+MANIFEST_PATH = SCRIPT_DIR / "manifest.yaml"
+MARKER_DIR = Path.home() / ".config" / "environment"
+
+
+def detect_os() -> str:
+    import platform
+    return "mac" if platform.system() == "Darwin" else "linux"
+
+
+def detect_active_profiles(profile_arg: str | None) -> set[str]:
+    """Read marker files in ~/.config/environment/profile-* and resolve requires."""
+    if profile_arg:
+        active = {profile_arg}
+    else:
+        active = set()
+        if MARKER_DIR.is_dir():
+            for f in MARKER_DIR.iterdir():
+                if f.name.startswith("profile-"):
+                    active.add(f.name[len("profile-"):])
+    # Always include base
+    active.add("base")
+    # Resolve requires chain (read from manifest)
+    manifest = yaml.safe_load(MANIFEST_PATH.read_text())
+    profiles = manifest.get("profiles", {})
+    resolved: set[str] = set()
+    def walk(p: str):
+        if p in resolved or p not in profiles:
+            return
+        resolved.add(p)
+        for req in profiles[p].get("requires", []) or []:
+            walk(req)
+    for p in active:
+        walk(p)
+    return resolved
+
+
+def run(cmd: list[str]) -> str:
+    try:
+        return subprocess.check_output(cmd, text=True, stderr=subprocess.DEVNULL)
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return ""
+
+
+def installed_brew_leaves() -> set[str]:
+    out = run(["brew", "leaves"])
+    # Strip tap prefixes for matching: snyk/tap/snyk → snyk
+    return {line.split("/")[-1] for line in out.strip().splitlines() if line}
+
+
+def installed_brew_casks() -> set[str]:
+    out = run(["brew", "list", "--cask"])
+    return set(out.strip().splitlines())
+
+
+def installed_mise_tools() -> set[str]:
+    """Tools mise has actually installed (not just listed in config).
+    `mise ls --installed` output has no header — every line is a tool."""
+    out = run(["mise", "ls", "--installed"])
+    tools = set()
+    for line in out.strip().splitlines():
+        parts = line.split()
+        if parts:
+            tools.add(parts[0])
+    return tools
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--profile", help="check only this profile (and its requires chain)")
+    ap.add_argument("--quiet", action="store_true", help="only show problems")
+    args = ap.parse_args()
+
+    target_os = detect_os()
+    active = detect_active_profiles(args.profile)
+    manifest = yaml.safe_load(MANIFEST_PATH.read_text())
+    profiles = manifest.get("profiles", {})
+    registry = manifest.get("registry", {})
+
+    # Build the set of declared package names for the active profile set.
+    declared_brew_formula = set()
+    declared_brew_cask = set()
+    declared_mise = set()
+    declared_other = set()  # bootstrap / git_clone / unmanaged
+    declared_it_managed = set()  # casks installed/owned outside brew (it_managed: true)
+    skipped_os = set()
+
+    for prof_name in active:
+        prof = profiles.get(prof_name, {})
+        for pkg in prof.get("packages", []) or []:
+            name = pkg if isinstance(pkg, str) else pkg.get("name")
+            entry = registry.get(name)
+            if not entry:
+                continue
+            entry_os = entry.get("os", ["mac", "linux"])
+            if isinstance(entry_os, str):
+                entry_os = [entry_os]
+            if target_os not in entry_os:
+                skipped_os.add(name)
+                continue
+            t = entry.get("type")
+            if t == "mise":
+                declared_mise.add(name)
+            elif t == "brew":
+                declared_brew_formula.add(name)
+            elif t == "cask":
+                # it_managed casks live outside brew (Jamf/self-installed), so
+                # brew never tracks them — treat like `other`, not a brew cask.
+                if entry.get("it_managed"):
+                    declared_it_managed.add(name)
+                else:
+                    declared_brew_cask.add(name)
+            else:
+                declared_other.add(name)
+
+    # What's actually installed
+    actual_brew = installed_brew_leaves()
+    actual_casks = installed_brew_casks()
+    actual_mise = installed_mise_tools()
+
+    # ORPHAN — installed but not declared.
+    # Subtract declared_other too: a tool declared as bootstrap/unmanaged (e.g.
+    # claude-code via its own installer) may also show up in brew's lists; that's
+    # declared intent, not an orphan.
+    orphan_brew_formula = actual_brew - declared_brew_formula - declared_brew_cask - declared_other
+    orphan_brew_cask = actual_casks - declared_brew_cask - declared_brew_formula - declared_it_managed - declared_other
+    orphan_mise = actual_mise - declared_mise - declared_other
+
+    # MISSING — declared but not installed
+    missing_brew_formula = declared_brew_formula - actual_brew
+    missing_brew_cask = declared_brew_cask - actual_casks
+    missing_mise = declared_mise - actual_mise
+
+    # DUPLICATE — installed via BOTH brew and mise (and one is declared, the other isn't)
+    duplicates = (actual_brew & actual_mise) | (declared_brew_formula & actual_mise) | (declared_mise & actual_brew)
+
+    # Also: tools declared as `cask` but installed as `brew` (or vice versa)
+    cask_as_formula = declared_brew_cask & actual_brew
+    formula_as_cask = declared_brew_formula & actual_casks
+
+    # Output
+    print(f"═══ verify (target={target_os}, active profiles: {','.join(sorted(active))}) ═══")
+    print()
+
+    found_issues = False
+
+    def section(title, items):
+        nonlocal found_issues
+        if items:
+            found_issues = True
+            print(f"  {title} ({len(items)})")
+            for x in sorted(items):
+                print(f"    - {x}")
+            print()
+
+    section("ORPHAN (installed via brew but not in manifest)", orphan_brew_formula)
+    section("ORPHAN (installed as cask but not in manifest)", orphan_brew_cask)
+    section("ORPHAN (installed via mise but not in manifest)", orphan_mise)
+    section("MISSING (declared brew formula, not installed)", missing_brew_formula)
+    section("MISSING (declared brew cask, not installed)", missing_brew_cask)
+    section("MISSING (declared mise tool, not installed)", missing_mise)
+    section("DUPLICATE (in both brew and mise)", duplicates)
+    section("MISMATCH (declared as cask but installed as formula)", cask_as_formula)
+    section("MISMATCH (declared as formula but installed as cask)", formula_as_cask)
+
+    if not args.quiet:
+        ok_brew = (declared_brew_formula & actual_brew) | (declared_brew_cask & actual_casks)
+        ok_mise = declared_mise & actual_mise
+        print(f"  OK ({len(ok_brew)} brew + {len(ok_mise)} mise)")
+        if skipped_os:
+            print(f"  SKIPPED os-mismatch ({len(skipped_os)}): {', '.join(sorted(skipped_os))}")
+        for k in declared_other:
+            print(f"  OTHER ({registry[k].get('type')}): {k}")
+        for k in sorted(declared_it_managed):
+            print(f"  IT-MANAGED (cask, installed outside brew): {k}")
+
+    print()
+    if found_issues:
+        print("✗ verify found issues — review above")
+        sys.exit(1)
+    else:
+        print("✓ verify clean")
+
+
+if __name__ == "__main__":
+    main()

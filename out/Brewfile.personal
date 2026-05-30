@@ -1,0 +1,10 @@
+# Generated from manifest.yaml — do not edit by hand.
+# Profile: personal, target: brew on macOS
+
+# ─── casks ───
+cask "claude"
+cask "gemini"
+cask "adobe-acrobat-dc"
+cask "adobe-creative-cloud"
+cask "adobe-illustrator-2026"
+cask "adobe-photoshop-2026"

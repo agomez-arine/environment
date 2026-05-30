@@ -1,0 +1,11 @@
+# Generated from manifest.yaml — do not edit by hand.
+# Profile: work, target OS: mac
+
+[tools]
+snyk = "latest"
+
+[settings]
+experimental = true
+auto_install = true
+lockfile = true
+minimum_release_age = "7d"   # supply-chain mitigation: refuse versions released <7 days ago
