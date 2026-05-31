@@ -28,7 +28,11 @@ vim.o.incsearch = true
 -- ── files / persistence ──────────────────────────────────────────────────
 vim.o.swapfile = false
 vim.o.backup = false
-vim.o.undodir = vim.fn.stdpath('state') .. '/undo'
+-- undodir defaults to stdpath('state')/undo already, and persistent undo only
+-- takes effect with `undofile = true` (not set here). Left explicit + commented
+-- as a reminder: uncomment both lines below to enable persistent undo history.
+-- vim.o.undofile = true
+-- vim.o.undodir = vim.fn.stdpath('state') .. '/undo'
 vim.o.autoread = true
 vim.o.exrc = true                        -- per-project .nvim.lua / .nvimrc
 vim.o.secure = true

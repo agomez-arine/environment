@@ -771,17 +771,15 @@ do
 
   require('conform').setup {
     notify_on_error = false,
+    -- Format-on-save is OFF by default and globally gated by the
+    -- <leader>uf toggle (see lua/custom/keymaps.lua), which flips
+    -- vim.g.autoformat_enabled. When enabled, every buffer with a
+    -- configured/LSP formatter is formatted on save.
     format_on_save = function(bufnr)
-      -- You can specify filetypes to autoformat on save here:
-      local enabled_filetypes = {
-        -- lua = true,
-        -- python = true,
-      }
-      if enabled_filetypes[vim.bo[bufnr].filetype] then
-        return { timeout_ms = 500 }
-      else
+      if not vim.g.autoformat_enabled then
         return nil
       end
+      return { timeout_ms = 500, lsp_format = 'fallback' }
     end,
     default_format_opts = {
       lsp_format = 'fallback', -- Use external formatters if configured below, otherwise use LSP formatting. Set to `false` to disable LSP formatting entirely.

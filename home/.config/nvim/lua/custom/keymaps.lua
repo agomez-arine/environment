@@ -23,9 +23,11 @@ im(',,',         '<Esc>A,<Esc>',          'Append ,')
 
 -- ── word wrap / format toggles ──────────────────────────────────────────
 nm('<leader>uw', function() vim.opt.wrap = not vim.opt.wrap:get() end, 'Toggle wrap')
+-- Format-on-save is OFF by default. This toggles it ON/OFF globally; conform's
+-- format_on_save (init.lua SECTION 6) reads vim.g.autoformat_enabled.
 nm('<leader>uf', function()
-  vim.g.disable_autoformat = not vim.g.disable_autoformat
-  vim.notify('autoformat: ' .. (vim.g.disable_autoformat and 'off' or 'on'))
+  vim.g.autoformat_enabled = not vim.g.autoformat_enabled
+  vim.notify('format-on-save: ' .. (vim.g.autoformat_enabled and 'on' or 'off'))
 end, 'Toggle format-on-save')
 
 -- ── movement ────────────────────────────────────────────────────────────

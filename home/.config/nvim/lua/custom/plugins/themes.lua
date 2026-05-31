@@ -21,7 +21,10 @@
 
 local gh = function(repo) return 'https://github.com/' .. repo end
 
--- ── Install theme plugins (pinned to a commit for reproducibility) ──────────
+-- ── Install theme plugins ───────────────────────────────────────────────────
+-- NOTE: these float on each plugin's default branch (no version pin). Colorscheme
+-- plugins are low-risk to track latest; pin a commit here if you want a theme
+-- frozen for reproducibility (as done in statusline.lua / git.lua / trouble.lua).
 vim.pack.add {
   { src = gh 'uhs-robert/oasis.nvim' },
   { src = gh 'rebelot/kanagawa.nvim' },
