@@ -94,24 +94,25 @@ vim.api.nvim_create_autocmd('LspAttach', {
   end,
 })
 
--- ── telescope ALIASES ───────────────────────────────────────────────────
--- kickstart's <leader>s* namespace (init.lua:508-518) stays canonical.
+-- ── picker ALIASES (snacks.picker) ───────────────────────────────────────
+-- kickstart's <leader>s* namespace (init.lua) stays canonical.
 -- Cheatsheet's <leader>f* aliases live alongside.
 -- DO NOT touch <leader><leader> (kickstart buffer picker) or <leader>/
 -- (kickstart current-buffer fuzzy find).
-local function telescope(sym)
-  return function() require('telescope.builtin')[sym]() end
+-- Pickers are provided by snacks.picker (migrated from telescope.builtin).
+local function pick(sym)
+  return function() require('snacks').picker[sym]() end
 end
-nm('<leader>fa', telescope('find_files'), 'Find all files (alias of <leader>sf)')
-nm('<leader>fi', telescope('live_grep'),  'Find in files (alias of <leader>sg)')
-nm('<leader>fr', telescope('oldfiles'),   'Recent files (alias of <leader>s.)')
-nm('<leader>fh', telescope('help_tags'),  'Help tags (alias of <leader>sh)')
-nm('<leader>fk', telescope('keymaps'),    'Keymaps (alias of <leader>sk)')
-nm('<leader>fc', telescope('commands'),   'Commands (alias of <leader>sc)')
-nm('<leader>fd', telescope('diagnostics'),'Diagnostics (alias of <leader>sd)')
-nm('<leader>fg', telescope('git_status'), 'Git status')
+nm('<leader>fa', pick('files'),       'Find all files (alias of <leader>sf)')
+nm('<leader>fi', pick('grep'),        'Find in files (alias of <leader>sg)')
+nm('<leader>fr', pick('recent'),      'Recent files (alias of <leader>s.)')
+nm('<leader>fh', pick('help'),        'Help tags (alias of <leader>sh)')
+nm('<leader>fk', pick('keymaps'),     'Keymaps (alias of <leader>sk)')
+nm('<leader>fc', pick('commands'),    'Commands (alias of <leader>sc)')
+nm('<leader>fd', pick('diagnostics'), 'Diagnostics (alias of <leader>sd)')
+nm('<leader>fg', pick('git_status'),  'Git status')
 -- dax-style: C-p for git_files
-nm('<C-p>',      telescope('git_files'),  'Git files (dax-style)')
+nm('<C-p>',      pick('git_files'),   'Git files (dax-style)')
 
 -- ── git hunk navigation aliases (kickstart uses ]c/[c, cheatsheet uses ]h/[h)
 -- ]c/[c are still functional; these aliases honor the cheatsheet.

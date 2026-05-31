@@ -3,7 +3,7 @@
 -- ============================================================================
 --
 -- Active theme:        oasis-dune (your pick — "Dune Dark", warm yellow desert)
--- Switch theme:        <leader>ut  → Telescope colorscheme picker (live preview)
+-- Switch theme:        <leader>ut  → snacks.picker colorscheme picker (live preview)
 --                      :colorscheme <Tab>  also works
 -- Persistence:         the chosen colorscheme is written to
 --                      stdpath('data')/colorscheme and reloaded on next start.
@@ -71,7 +71,7 @@ end
 
 apply(read_saved() or default_scheme)
 
--- Save whenever the colorscheme changes (covers the Telescope picker, :colorscheme,
+-- Save whenever the colorscheme changes (covers the snacks picker, :colorscheme,
 -- and anything else that triggers the ColorScheme event).
 vim.api.nvim_create_autocmd('ColorScheme', {
   group = vim.api.nvim_create_augroup('persist-colorscheme', { clear = true }),
@@ -81,7 +81,7 @@ vim.api.nvim_create_autocmd('ColorScheme', {
 })
 
 -- ── Picker keymap ───────────────────────────────────────────────────────────
--- <leader>ut → fuzzy colorscheme picker with live preview (Telescope builtin).
+-- <leader>ut → fuzzy colorscheme picker with live preview (snacks.picker).
 vim.keymap.set('n', '<leader>ut', function()
-  require('telescope.builtin').colorscheme { enable_preview = true }
+  require('snacks').picker.colorschemes()
 end, { desc = '[U]I: [T]heme picker' })

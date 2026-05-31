@@ -6,7 +6,7 @@
 --   LSP/runnables/debuggables : mrcjkb/rustaceanvim  (this file)
 --   Completion                : saghen/blink.cmp     (init.lua SECTION 7)
 --   Debugger engine           : mfussenegger/nvim-dap (kickstart debug.lua)
---   DAP adapter               : codelldb              (installed via mason-tools.lua)
+--   DAP adapter               : codelldb              (installed via mason ensure_installed in init.lua)
 --   Syntax/folding            : nvim-treesitter       (init.lua SECTION 8)
 --   Test UI                   : nvim-neotest/neotest  (this file, w/ rustaceanvim adapter)
 --
@@ -45,7 +45,7 @@ vim.g.rustaceanvim = {
     },
   },
   -- DAP: rustaceanvim auto-detects codelldb installed by mason. No config needed
-  -- here as long as codelldb is on disk (see mason-tools.lua ensure_installed).
+  -- here as long as codelldb is on disk (see mason ensure_installed in init.lua).
   dap = {},
 }
 
