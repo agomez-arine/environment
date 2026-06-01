@@ -114,7 +114,7 @@ nm('<leader>fc', pick('commands'),    'Commands (alias of <leader>sc)')
 nm('<leader>fd', pick('diagnostics'), 'Diagnostics (alias of <leader>sd)')
 nm('<leader>fg', pick('git_status'),  'Git status')
 -- dax-style: C-p for git_files
-nm('<C-p>',      pick('git_files'),   'Git files (dax-style)')
+nm('<C-p>',      pick('git_files'),   'Git files')
 
 -- ── git hunk navigation aliases (kickstart uses ]c/[c, cheatsheet uses ]h/[h)
 -- ]c/[c are still functional; these aliases honor the cheatsheet.

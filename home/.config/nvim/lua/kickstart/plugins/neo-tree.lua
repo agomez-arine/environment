@@ -23,6 +23,13 @@ require('neo-tree').setup {
     -- producing two separate tree views. We open the sidebar explicitly
     -- on startup instead (see the VimEnter autocmd below).
     hijack_netrw_behavior = 'disabled',
+    -- Keep the tree in sync with on-disk changes made OUTSIDE neo-tree
+    -- (git checkout, terminal `mv`/`rm`, LSP code actions, `:e!`, etc.).
+    -- neo-tree does NOT track buffer reloads like `:e!` on its own, so without
+    -- a watcher the tree shows a stale snapshot. The libuv watcher uses the OS
+    -- file-notification API (kqueue on macOS) — this is the standard, recommended
+    -- approach and updates the tree automatically with no polling.
+    use_libuv_file_watcher = true,
     -- Show dotfiles / hidden + gitignored entries by default (the "N hidden
     -- directories" placeholder otherwise hides .config, .ssh, etc.).
     -- Toggle live in the tree with `H`.
@@ -43,6 +50,19 @@ require('neo-tree').setup {
     position = 'right',
   },
 }
+
+-- Belt-and-suspenders for the one case the libuv watcher can miss: changes made
+-- while nvim is fully backgrounded/suspended (e.g. `Ctrl-Z`, run a git checkout
+-- in the shell, then `fg`). On regaining focus, nudge neo-tree to refresh so the
+-- tree reflects reality. Cheap and only fires on FocusGained.
+vim.api.nvim_create_autocmd('FocusGained', {
+  group = vim.api.nvim_create_augroup('kickstart-neotree-focus-refresh', { clear = true }),
+  callback = function()
+    pcall(function()
+      require('neo-tree.sources.manager').refresh 'filesystem'
+    end)
+  end,
+})
 
 -- When nvim is launched on a directory (e.g. `nvim .`), open neo-tree as a
 -- proper sidebar and put a normal empty buffer in the main window — instead

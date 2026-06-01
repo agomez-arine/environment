@@ -623,7 +623,54 @@ do
     -- Python language features: completion, go-to-def, hover, type checking.
     -- Root-gated: only attaches in projects with pyproject.toml/setup.py/etc, so
     -- it never activates in non-Python projects.
-    pyright = {},
+    --
+    -- VENV AUTODETECT: every project here uses a top-level `.venv/`. Without an
+    -- explicit interpreter, pyright relies on the $VIRTUAL_ENV env var, which is
+    -- fragile — if nvim wasn't launched from a shell with the venv activated
+    -- (tmux/restored sessions, opening nvim before `source .venv/bin/activate`),
+    -- pyright falls back to a mise/system python that lacks the project's
+    -- site-packages, producing phantom import errors. before_init below finds a
+    -- `.venv` in the LSP root and points pyright at its interpreter explicitly,
+    -- so it works regardless of how nvim was started. To verify which interpreter
+    -- is live: `:lua =vim.lsp.get_clients({name='pyright'})[1].settings.python`
+    pyright = {
+      before_init = function(_, config)
+        local root = config.root_dir
+        if not root then
+          return
+        end
+        local sep = package.config:sub(1, 1)
+        -- GUARD: if the project ships its own pyright config, get out of the way
+        -- and let pyright read it natively. Injecting pythonPath here would
+        -- override an intentional pyrightconfig.json / [tool.pyright] block.
+        if vim.fn.filereadable(root .. sep .. 'pyrightconfig.json') == 1 then
+          return
+        end
+        local pyproject = root .. sep .. 'pyproject.toml'
+        if vim.fn.filereadable(pyproject) == 1 then
+          for _, line in ipairs(vim.fn.readfile(pyproject)) do
+            if line:match '^%[tool%.pyright%]' then
+              return
+            end
+          end
+        end
+        -- Prefer a project-local .venv; fall back to $VIRTUAL_ENV if present.
+        -- (No bare `python3` fallback on purpose — that would hit a mise shim.)
+        local venv = root .. sep .. '.venv'
+        local py = venv .. sep .. 'bin' .. sep .. 'python'
+        if vim.fn.executable(py) == 0 then
+          venv = vim.env.VIRTUAL_ENV
+          py = venv and (venv .. sep .. 'bin' .. sep .. 'python') or nil
+        end
+        if py and vim.fn.executable(py) == 1 then
+          config.settings = config.settings or {}
+          config.settings.python = config.settings.python or {}
+          config.settings.python.pythonPath = py
+          config.settings.python.venvPath = vim.fn.fnamemodify(venv, ':h')
+          config.settings.python.venv = vim.fn.fnamemodify(venv, ':t')
+        end
+      end,
+    },
 
     -- Ruff LSP: fast lint diagnostics + quick-fixes + import organizing.
     -- Currently OFF. To enable: uncomment the block below.
@@ -735,6 +782,35 @@ do
     vim.lsp.enable(name)
   end
 end
+
+-- :PyrightVenv — print the interpreter pyright actually resolved for the current
+-- buffer's client. Reads the python settings our before_init hook injected; if
+-- empty (e.g. project ships its own pyrightconfig.json and the hook bowed out),
+-- points you at :LspLog where pyright records the path it chose itself.
+vim.api.nvim_create_user_command('PyrightVenv', function()
+  local clients = vim.lsp.get_clients { name = 'pyright', bufnr = 0 }
+  if vim.tbl_isempty(clients) then
+    clients = vim.lsp.get_clients { name = 'pyright' }
+  end
+  if vim.tbl_isempty(clients) then
+    vim.notify('pyright: no active client', vim.log.levels.WARN)
+    return
+  end
+  local c = clients[1]
+  local py = (c.settings and c.settings.python) or (c.config.settings and c.config.settings.python)
+  if py and py.pythonPath then
+    vim.notify(
+      ('pyright interpreter:\n  %s\n  root: %s'):format(py.pythonPath, c.root_dir or '?'),
+      vim.log.levels.INFO
+    )
+  else
+    vim.notify(
+      'pyright did not set pythonPath via the hook (project may have its own '
+        .. 'pyrightconfig.json/[tool.pyright]).\nCheck :LspLog for the resolved path.',
+      vim.log.levels.INFO
+    )
+  end
+end, { desc = 'Show the interpreter/venv pyright resolved for this buffer' })
 
 -- ============================================================
 -- SECTION 6: FORMATTING

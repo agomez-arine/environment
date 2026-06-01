@@ -18,7 +18,7 @@ local harpoon = require('harpoon')
 harpoon:setup({})
 
 local map = vim.keymap.set
-map('n', '<leader>a',  function() harpoon:list():add() end,                       { desc = 'Harpoon add (dax-style)' })
+  map('n', '<leader>a',  function() harpoon:list():add() end,                       { desc = 'Harpoon add' })
 map('n', '<leader>m',  function() harpoon.ui:toggle_quick_menu(harpoon:list()) end, { desc = 'Harpoon menu' })
 map('n', '<C-e>',      function() harpoon.ui:toggle_quick_menu(harpoon:list()) end, { desc = 'Harpoon menu (C-e)' })
 map('n', '<leader>1',  function() harpoon:list():select(1) end, { desc = 'Harpoon 1' })
