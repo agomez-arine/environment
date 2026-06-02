@@ -77,7 +77,12 @@ nm('<leader>bd', '<cmd>bdelete<CR>',   'Delete buffer')
 nm('<leader>bb', '<cmd>e #<CR>',       'Switch to last buffer')
 
 -- ── diagnostics ─────────────────────────────────────────────────────────
--- kickstart already binds ]d/[d via vim.diagnostic defaults; nothing to do.
+-- kickstart already binds ]d/[d via vim.diagnostic defaults (they auto-open
+-- the float on jump, see init.lua jump.on_jump).
+-- Show the diagnostic float for the CURRENT line without jumping. <leader>d
+-- is taken (Debug group, init.lua:375), so this lives on <leader>cd to match
+-- the <leader>c* "code" family (cr/ca/cf above).
+nm('<leader>cd', vim.diagnostic.open_float, 'Show line diagnostic float')
 
 -- ── LSP ALIASES: cheatsheet uses old g* style; kickstart uses new gr* ───
 -- BOTH coexist. kickstart's bindings remain functional. These alias the

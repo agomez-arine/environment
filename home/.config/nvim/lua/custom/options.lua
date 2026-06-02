@@ -22,8 +22,10 @@ vim.o.smartindent = true
 vim.o.shiftround = true
 
 -- ── search ───────────────────────────────────────────────────────────────
-vim.o.hlsearch = false                   -- kickstart leaves this on (default)
-vim.o.incsearch = true
+vim.o.hlsearch = true                    -- keep matches highlighted after Enter;
+                                         -- <Esc> is mapped to :nohlsearch (init.lua:186)
+                                         -- to clear them on demand. n/N step matches.
+vim.o.incsearch = true                   -- also highlight the match while typing
 
 -- ── files / persistence ──────────────────────────────────────────────────
 vim.o.swapfile = false

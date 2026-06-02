@@ -912,6 +912,12 @@ do
       -- See `:help blink-cmp-config-keymap` for defining your own keymap
       preset = 'default',
 
+      -- Accept the selected completion with <CR> (Enter). When the menu is not
+      -- open, <CR> falls back to inserting a normal newline. 'accept' (not
+      -- 'select_and_accept') only confirms when an item is actually selected,
+      -- so Enter on a blank line still works as expected.
+      ['<CR>'] = { 'accept', 'fallback' },
+
       -- For more advanced Luasnip keymaps (e.g. selecting choice nodes, expansion) see:
       --    https://github.com/L3MON4D3/LuaSnip?tab=readme-ov-file#keymaps
     },
