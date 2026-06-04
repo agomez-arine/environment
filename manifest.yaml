@@ -86,6 +86,7 @@ profiles:
       # Dev tools (most are workstation-only)
       - just
       - lazygit
+      - hunk
       - lefthook
       - gitleaks
       - shfmt
@@ -107,6 +108,7 @@ profiles:
       - opencode
       # Network / misc
       - wget
+      - curl
       - pandoc
       - pnpm
       # Brew on mac
@@ -321,6 +323,11 @@ registry:
     type: mise
     versions: ["latest"]
     repo: https://github.com/dandavison/delta
+  # Review-first interactive terminal diff viewer (split/stack layouts, agent annotations)
+  hunk:
+    type: mise
+    versions: ["latest"]
+    repo: https://github.com/modem-dev/hunk
   # Command-line benchmarking
   hyperfine:
     type: mise
@@ -501,6 +508,19 @@ registry:
       apt: wget
       dnf: wget
       pacman: wget
+
+  # Modern curl (>= 8.10.0) for avante.nvim's Bedrock SigV4 signing. macOS ships
+  # an older system curl (8.7.x); minimal Linux images may lack it entirely.
+  # keg-only on brew, so it does NOT shadow /usr/bin/curl — avante is pointed at
+  # this binary explicitly (see home/.config/nvim/lua/custom/plugins/avante.lua).
+  curl:
+    type: brew
+    os: [mac, linux]
+    repo: https://curl.se/
+    linux_packages:
+      apt: curl
+      dnf: curl
+      pacman: curl
 
   # Universal document converter
   pandoc:

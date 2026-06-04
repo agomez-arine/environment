@@ -6,6 +6,7 @@ brew "tree-sitter-cli"
 brew "parallel"
 brew "sesh"
 brew "wget"
+brew "curl"
 
 # ─── casks ───
 cask "bruno"

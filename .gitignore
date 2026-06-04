@@ -25,8 +25,12 @@ home/.config/zsh/plugins/
 # Leftover nvim config backup from the LazyVim → kickstart migration
 home/.config/nvim-lazyvim-backup/
 
-# Brew lock files we don't pin
-*.lock
+# Brew lock files we don't pin (sync sets HOMEBREW_BUNDLE_NO_LOCK=1 anyway).
+# NOTE: scoped to Brewfile locks ONLY. A bare `*.lock` here previously caught
+# home/.config/mise/mise.lock as collateral, contradicting docs/decisions.md
+# which says mise.lock MUST be tracked for reproducible installs.
+Brewfile.lock.json
+**/Brewfile*.lock.json
 
 # OS
 .DS_Store

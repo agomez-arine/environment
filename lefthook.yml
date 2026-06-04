@@ -1,0 +1,58 @@
+# lefthook.yml — git hooks for the environment repo.
+#
+# Install once per clone with:  lefthook install   (also run by ./bootstrap)
+# Skip in an emergency with:    LEFTHOOK=0 git commit ...   or   git commit -n
+#
+# Guard rationale: docs/decisions.md mandates that home/.config/mise/mise.lock
+# is TRACKED so installs are reproducible (pinned versions + checksums). When
+# you change the tool set in manifest.yaml, the lockfile must be regenerated
+# (`mise lock --global`) and committed alongside it — otherwise a fresh machine
+# re-resolves "latest" and the pin is meaningless. This hook blocks commits
+# that change the manifest's tooling without an accompanying lockfile update.
+
+pre-commit:
+  parallel: true
+  commands:
+    mise-lock-in-sync:
+      # Only run when the manifest is part of this commit.
+      glob: "manifest.yaml"
+      # `staged_files` is provided by lefthook; we re-check git ourselves so the
+      # logic is explicit and testable.
+      run: |
+        set -euo pipefail
+        LOCK="home/.config/mise/mise.lock"
+
+        # Is manifest.yaml actually staged?
+        if ! git diff --cached --name-only | grep -qx "manifest.yaml"; then
+          exit 0
+        fi
+
+        # Is the lockfile staged in the same commit? If so, trust it.
+        if git diff --cached --name-only | grep -qx "$LOCK"; then
+          exit 0
+        fi
+
+        # manifest staged, lock NOT staged → verify the lock is actually current
+        # by regenerating into a temp copy and comparing CONTENT. We compare
+        # content (not `git diff`) so this works even before the lock has ever
+        # been committed (an untracked file is not "modified" to git).
+        if ! command -v mise >/dev/null 2>&1; then
+          echo "✖ manifest.yaml is staged without $LOCK, and mise is not"
+          echo "  installed to verify. Regenerate and stage the lock:"
+          echo "      mise lock --global && git add $LOCK"
+          exit 1
+        fi
+
+        before="$(cat "$LOCK" 2>/dev/null || true)"
+        mise lock --global >/dev/null 2>&1 || true
+        after="$(cat "$LOCK" 2>/dev/null || true)"
+
+        if [ "$before" != "$after" ]; then
+          echo "✖ manifest.yaml changed but $LOCK was out of date."
+          echo "  Regenerated it just now — review and stage it:"
+          echo "      git add $LOCK"
+          echo "  (Run ./sync first if you also want the tool installed locally.)"
+          exit 1
+        fi
+        # Lock was already current — allow the commit.
+        exit 0
