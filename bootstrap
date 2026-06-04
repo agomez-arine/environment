@@ -137,6 +137,16 @@ do_git_clones() {
   }
 }
 
+# Install this repo's git hooks (lefthook). Delegated to the standalone
+# ./install-hooks script to keep hook setup modular and independently runnable.
+# Only matters for committing/pushing FROM this repo; no-ops if lefthook isn't
+# present yet, so it's safe to call even when sync hasn't installed it.
+do_install_hooks() {
+  if [[ -x "$ENV_DIR/install-hooks" ]]; then
+    "$ENV_DIR/install-hooks" || echo "  ! install-hooks had errors; continuing" >&2
+  fi
+}
+
 # ───────── --minimal: fast SSH path ─────────
 if [[ $MINIMAL -eq 1 ]]; then
   echo "→ minimal mode: shell + symlinks only"
@@ -204,6 +214,11 @@ if [[ -x "$ENV_DIR/sync" ]]; then
 else
   echo "  ! sync script not found or not executable; skipping" >&2
 fi
+
+# Wire up git hooks now that sync has installed lefthook (workstation profiles).
+# Kept as a separate step so it's obvious this only affects committing/pushing
+# from this repo, not the machine's package state.
+do_install_hooks
 
 echo
 echo "✓ bootstrap complete. Open a new shell."
