@@ -285,7 +285,14 @@ def emit_brewfile(manifest: dict, profile: str) -> str:
     if casks:
         lines.append("# ─── casks ───")
         for pkg in casks:
-            lines.append(f'cask "{pkg["name"]}"')
+            # Casks marked `appdir:` install into a user-writable dir (e.g.
+            # ~/Applications) to bypass PrivilegeManagement/sudo gates on the
+            # work mac. Per-cask so it doesn't affect other casks.
+            appdir = pkg.get("appdir")
+            if appdir:
+                lines.append(f'cask "{pkg["name"]}", args: {{ appdir: "{appdir}" }}')
+            else:
+                lines.append(f'cask "{pkg["name"]}"')
     if it_managed:
         lines.append("")
         lines.append("# ─── IT/Jamf-managed (NOT installed by brew) ───")

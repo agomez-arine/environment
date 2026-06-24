@@ -147,6 +147,10 @@ profiles:
     packages:
       - snyk
       - oath-toolkit
+      # Native build deps for Python pdf libs (pycairo → cairo + pkg-config).
+      # Work-mac only: needed to `uv sync` the pdf-template-management repo.
+      - cairo
+      - pkg-config
       - displaylink-manager
       - falcon
       - beyondtrust
@@ -161,6 +165,8 @@ profiles:
       - openvpn-connect
       - rippling
       - skim
+      - kiro
+      - kiro-cli
 
   personal:
     description: "Creative and personal tools. Requires workstation."
@@ -554,6 +560,27 @@ registry:
     repo: https://github.com/git-lfs/git-lfs
 
   # ─── BREW FORMULAE ──────────────────────────────────────────────────────
+  # 2D graphics library — native dependency for Python's pycairo, pulled in by
+  # rlextra[pycairo] in the pdf-template-management repo. mise's registry has no
+  # C shared libs, so brew owns this (like btop/tree/wget/curl above).
+  cairo:
+    type: brew
+    os: [mac, linux]
+    repo: https://www.cairographics.org/
+    linux_packages:
+      apt: libcairo2-dev
+      dnf: cairo-devel
+      pacman: cairo
+  # pkg-config (provided by pkgconf on modern brew) — lets source builds locate
+  # cairo/freetype/etc. Required by pycairo's meson build on macOS.
+  pkg-config:
+    type: brew
+    os: [mac, linux]
+    repo: https://github.com/pkgconf/pkgconf
+    linux_packages:
+      apt: pkg-config
+      dnf: pkgconf-pkg-config
+      pacman: pkgconf
   # OATH (HOTP/TOTP) toolkit — local MFA codes (work alias relies on `oathtool`)
   oath-toolkit:
     type: brew
@@ -793,6 +820,18 @@ registry:
   skim:
     type: cask
     os: [mac]
+  # Agent-centric IDE (spec-driven dev). WORK USE ONLY.
+  # Installs into ~/Applications to bypass the work-mac PrivilegeManagement
+  # sudo gate on /Applications.
+  kiro:
+    type: cask
+    os: [mac]
+    appdir: "~/Applications"
+  # Kiro command-line AI tool. WORK USE ONLY. Same ~/Applications workaround.
+  kiro-cli:
+    type: cask
+    os: [mac]
+    appdir: "~/Applications"
 
   # ─── BOOTSTRAPPERS (curl-installed) ─────────────────────────────────────
   # Anthropic's recommended installer for auto-updates

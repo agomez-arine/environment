@@ -26,3 +26,10 @@ esac
 # Local overlay (gitignored)
 [[ -f "$ENV_DIR/local/zshrc.local" ]] && source "$ENV_DIR/local/zshrc.local"
 [[ -f "$ENV_DIR/local/env.local" ]]   && source "$ENV_DIR/local/env.local"
+
+# Kiro CLI shell integration — `post` half (WORK ONLY). Must be the LAST thing
+# sourced, and paired with the `pre` half in profile-work.zsh. See that file
+# for why pre/post are split. Work-marker-gated so it no-ops elsewhere.
+if [[ -f "$HOME/.config/environment/profile-work" ]] && command -v kiro-cli >/dev/null 2>&1; then
+  eval "$(kiro-cli init zsh post 2>/dev/null)"
+fi

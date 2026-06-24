@@ -3,9 +3,13 @@
 
 # ─── formulae ───
 brew "oath-toolkit"
+brew "cairo"
+brew "pkg-config"
 
 # ─── casks ───
 cask "skim"
+cask "kiro", args: { appdir: "~/Applications" }
+cask "kiro-cli", args: { appdir: "~/Applications" }
 
 # ─── IT/Jamf-managed (NOT installed by brew) ───
 # cask "microsoft-excel"  # it_managed: installed by IT/Jamf
