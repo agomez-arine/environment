@@ -443,6 +443,21 @@ do
     picker = {
       ui_select = true, -- use the snacks picker for vim.ui.select (code actions, etc.)
     },
+    -- Inline image previews (PNG/JPG/GIF/WEBP/etc.) rendered directly in the
+    -- buffer via the Kitty graphics protocol. Works in Ghostty; requires
+    -- ImageMagick (`magick`) on PATH for non-PNG conversion and tmux
+    -- `allow-passthrough on` (see ~/.tmux.conf) so the graphics escapes reach
+    -- the terminal through tmux. Opening an image file shows the picture; the
+    -- module also renders images referenced in markdown/LaTeX/HTML docs.
+    image = {
+      enabled = true,
+      doc = {
+        -- Render images referenced in documents (markdown, etc.) inline.
+        enabled = true,
+        -- Only render inline when the file is small enough / on demand.
+        inline = true,
+      },
+    },
   }
 
   local picker = require('snacks').picker
@@ -536,6 +551,23 @@ do
   -- Useful status updates for LSP.
   vim.pack.add { gh 'j-hui/fidget.nvim' }
   require('fidget').setup {}
+
+  -- Speed up `:qa`/exit. On quit, Neovim waits for attached language servers to
+  -- shut down gracefully (a `shutdown`/`exit` request round-trip). Heavy servers
+  -- like rust-analyzer (managed here by rustaceanvim) can make this take
+  -- noticeably long. Force-stopping all clients on VimLeavePre skips the polite
+  -- wait — safe because the process is exiting anyway. `force = true` sends the
+  -- kill immediately instead of waiting for a clean shutdown.
+  vim.api.nvim_create_autocmd('VimLeavePre', {
+    group = vim.api.nvim_create_augroup('custom-lsp-fast-exit', { clear = true }),
+    callback = function()
+      -- vim.lsp.get_clients is the 0.10+ API (get_active_clients is deprecated).
+      local clients = vim.lsp.get_clients()
+      if not vim.tbl_isempty(clients) then
+        vim.lsp.stop_client(clients, true) -- true = force kill, don't await shutdown
+      end
+    end,
+  })
 
   --  This function gets run when an LSP attaches to a particular buffer.
   --    That is to say, every time a new file is opened that is associated with

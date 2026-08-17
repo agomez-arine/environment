@@ -1,3 +1,7 @@
+
+# Kiro CLI pre block. Keep at the top of this file.
+[[ -f "${HOME}/Library/Application Support/kiro-cli/shell/zshrc.pre.zsh" ]] && builtin source "${HOME}/Library/Application Support/kiro-cli/shell/zshrc.pre.zsh"
+
 # Real zshrc. Lives in ~/.config/zsh/ via ZDOTDIR.
 # Sourced by the stub at ~/.zshrc.
 
@@ -33,3 +37,7 @@ esac
 if [[ -f "$HOME/.config/environment/profile-work" ]] && command -v kiro-cli >/dev/null 2>&1; then
   eval "$(kiro-cli init zsh post 2>/dev/null)"
 fi
+
+
+# Kiro CLI post block. Keep at the bottom of this file.
+[[ -f "${HOME}/Library/Application Support/kiro-cli/shell/zshrc.post.zsh" ]] && builtin source "${HOME}/Library/Application Support/kiro-cli/shell/zshrc.post.zsh"

@@ -571,6 +571,41 @@ registry:
       apt: libcairo2-dev
       dnf: cairo-devel
       pacman: cairo
+  # Image manipulation suite (`magick`/`convert`). Required by snacks.nvim's
+  # image module to convert/rasterize non-PNG images and PDF pages for inline
+  # preview in nvim (Kitty graphics protocol via Ghostty). Also used by
+  # pdfreader.nvim. Poppler (`pdftoppm`/`pdfinfo`) provides the PDF rasterizer;
+  # imagemagick handles the image conversion side.
+  imagemagick:
+    type: brew
+    os: [mac, linux]
+    repo: https://imagemagick.org/
+    linux_packages:
+      apt: imagemagick
+      dnf: ImageMagick
+      pacman: imagemagick
+  # PDF rendering/utilities (`pdftoppm`, `pdfinfo`). pdfreader.nvim shells out to
+  # these to rasterize PDF pages into images for inline viewing in nvim. Was
+  # previously present only as a transitive dep of diff-pdf; pinned here as a
+  # top-level dep so it survives independent of diff-pdf.
+  poppler:
+    type: brew
+    os: [mac, linux]
+    repo: https://poppler.freedesktop.org/
+    linux_packages:
+      apt: poppler-utils
+      dnf: poppler-utils
+      pacman: poppler
+  # PostScript/PDF interpreter (`gs`). ImageMagick delegates PDF rasterization to
+  # Ghostscript, so pdfreader.nvim's PDF-page rendering needs it present.
+  ghostscript:
+    type: brew
+    os: [mac, linux]
+    repo: https://www.ghostscript.com/
+    linux_packages:
+      apt: ghostscript
+      dnf: ghostscript
+      pacman: ghostscript
   # pkg-config (provided by pkgconf on modern brew) — lets source builds locate
   # cairo/freetype/etc. Required by pycairo's meson build on macOS.
   pkg-config:

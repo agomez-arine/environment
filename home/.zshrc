@@ -6,3 +6,5 @@
 # so it self-heals by pointing at the real config.
 export ZDOTDIR="${ZDOTDIR:-$HOME/.config/zsh}"
 [[ -f "$ZDOTDIR/.zshrc" ]] && source "$ZDOTDIR/.zshrc"
+
+[[ "$TERM_PROGRAM" == "kiro" ]] && . "$(kiro --locate-shell-integration-path zsh)"
