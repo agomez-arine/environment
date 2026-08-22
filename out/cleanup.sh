@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Generated from cleanup.yaml — do not edit by hand.
 # Filesystem cleanup (paths/commands). Idempotent.
-# Profiles: base,workstation,work,personal, target OS: mac
+# Profiles: base,work,workstation, target OS: mac
 set -uo pipefail
 
 echo '=== Cleanup script ==='

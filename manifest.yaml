@@ -249,7 +249,11 @@ registry:
   # Python interpreter (mise picks WHICH; uv handles project deps)
   python:
     type: mise
-    versions: ["3.14", "3.13", "3.12", "3.11", "3.10"]
+    # EXACT patch versions. "3.14" floats: mise resolves it once at install time and
+    # never again, so two machines bootstrapped a month apart silently get different
+    # interpreters, and a repo pinning 3.14.7 in .python-version fails on a machine
+    # that resolved 3.14.5. First listed is the default on PATH.
+    versions: ["3.14.7", "3.13.15", "3.12.14", "3.11.16", "3.10.21"]
     repo: https://github.com/python/cpython
   # Infrastructure-as-code
   terraform:
@@ -471,7 +475,11 @@ registry:
   # Python project + package manager (replaces pip/venv/poetry/pipx)
   uv:
     type: mise
-    versions: ["latest"]
+    # EXACT, not "latest". uv embeds its list of installable CPython builds, so a
+    # floating uv silently determines which Python versions you can even get:
+    # 0.11.19 tops out at 3.14.5 and cannot install 3.14.7. Repos that pin an exact
+    # interpreter therefore depend on an exact uv. Bump both together.
+    versions: ["0.12.5"]
     repo: https://github.com/astral-sh/uv
 
   # Cross-shell prompt
