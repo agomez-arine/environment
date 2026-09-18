@@ -211,7 +211,6 @@ enter_accept = true
 #   "ip",
 #   "jj",
 #   "kubectl",
-#   "nix",
 #   "nmcli",
 #   "npm",
 #   "pecl",

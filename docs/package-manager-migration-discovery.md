@@ -430,8 +430,7 @@ The migration was completed on 2026-09-18 with direct `Brewfile` and mise
 configuration ownership. Existing versions seeded the new Mac-only lock before
 activation, the known command collisions were verified through mise shims, and
 native Homebrew/mise cleanup removed undeclared packages only after convergence
-passed. The pre-existing `/nix` volume was explicitly left untouched because it
-is unrelated to this setup and requires IT-authorized system cleanup.
+passed.
 
 ## Primary sources
 

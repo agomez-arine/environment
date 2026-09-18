@@ -10,8 +10,7 @@ Work Mac dotfiles and package configuration.
 - `./sync` links dotfiles, installs locked mise tools, and installs missing
   Brewfile entries. It does not remove undeclared software or upgrade packages.
 - `./upgrade` is the explicit update path.
-- IT/Jamf-managed software and the unrelated `/nix` volume are outside this
-  setup.
+- IT/Jamf-managed software is outside this setup.
 
 There are two package sources of truth:
 
@@ -53,7 +52,6 @@ flowchart TD
     Upgrade --> MiseConfig
 
     IT["IT / Jamf apps"] -. "documented, not managed" .-> Brewfile
-    Nix["Existing /nix volume"] -. "unrelated, untouched" .-> Repo
 ```
 
 Homebrew initializes before mise, then mise's stable shim directory is placed
