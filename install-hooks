@@ -3,7 +3,7 @@
 #
 # Standalone + idempotent. Safe to run on its own at any time:
 #     ./install-hooks
-# Also invoked by ./bootstrap (full mode) so a fresh clone gets hooks wired up.
+# Also invoked by ./bootstrap so a fresh clone gets hooks wired up.
 #
 # This ONLY affects committing/pushing FROM this repo (e.g. the mise.lock guard
 # in lefthook.yml). It installs nothing a normal `sync` needs, so it is kept
@@ -26,8 +26,8 @@ if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   exit 0
 fi
 
-# lefthook is a workstation tool (installed by sync via mise). It may not be on
-# PATH yet on a brand-new box. Try PATH, then the mise shim, before giving up.
+# lefthook is installed by sync via mise. It may not be on PATH yet on a
+# brand-new Mac. Try PATH, then mise, before giving up.
 LEFTHOOK=""
 if have lefthook; then
   LEFTHOOK="lefthook"

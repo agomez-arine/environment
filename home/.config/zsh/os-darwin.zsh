@@ -1,4 +1,4 @@
-# mac-only — pbcopy/pbpaste already exist; brew shellenv.
+# macOS — pbcopy/pbpaste already exist; initialize Homebrew before mise.
 # Handle both Apple Silicon (/opt/homebrew) and Intel (/usr/local) prefixes.
 if [[ -x /opt/homebrew/bin/brew ]]; then
   eval "$(/opt/homebrew/bin/brew shellenv)"

@@ -1,113 +1,160 @@
 # environment
 
-My dotfiles + package manifest. Reproducible across mac (work + personal),
-Linux (Arch, Fedora, Ubuntu), and headless servers (EC2, Pi).
+Work Mac dotfiles and package configuration.
 
-## SURVIVAL CHEATSHEET (no internet help? start here)
+## TL;DR
 
-Everything is 5 scripts. You don't need to remember anything else.
+- Developer runtimes and CLIs are declared directly in
+  `home/.config/mise/config.toml` and resolved by `mise.lock`.
+- GUI apps and native macOS dependencies are declared directly in `Brewfile`.
+- `./sync` links dotfiles, installs locked mise tools, and installs missing
+  Brewfile entries. It does not remove undeclared software or upgrade packages.
+- `./upgrade` is the explicit update path.
+- IT/Jamf-managed software and the unrelated `/nix` volume are outside this
+  setup.
 
-```bash
-# 1. Get the repo (SSH if keys are set up, else HTTPS — works on a bare box):
-git clone git@github.com:agomez-arine/environment.git ~/environment   # with SSH key
-git clone https://github.com/agomez-arine/environment.git ~/environment # no key yet
-cd ~/environment
+There are two package sources of truth:
 
-# 2. Set up THIS machine (pick one):
-./bootstrap --profile server    # headless box / EC2 (base tools, no GUI)
-./bootstrap --profile work       # work mac
-./bootstrap --profile personal   # personal machine
-./bootstrap --minimal            # shell + symlinks ONLY, no installers (fastest)
+- `home/.config/mise/config.toml` for developer runtimes and CLIs
+- `Brewfile` for macOS applications, native libraries, and formula exceptions
 
-# 3. Day to day:
-git pull && ./sync               # converge to manifest (fast: installs only what's missing)
-./upgrade                        # SLOW, opt-in: actually bump versions
-./verify                         # report drift (missing / orphan / IT-managed)
-./nuke                           # dry-run: show what's installed but NOT declared
-./nuke --execute                 # actually remove the undeclared extras
+No manifest or generated package files sit between those configs and their
+package managers.
+
+## How it works
+
+```mermaid
+flowchart TD
+    Repo["~/environment"] --> Bootstrap["./bootstrap (first run)"]
+    Repo --> Sync["./sync (daily convergence)"]
+    Bootstrap --> Sync
+
+    Sync --> Dotfiles["home/*"]
+    Dotfiles --> Home["Symlinks in $HOME"]
+
+    Sync --> MiseConfig["mise config.toml + mise.lock"]
+    MiseConfig --> MiseInstall["mise install --locked"]
+    MiseInstall --> MiseTools["CLIs and runtimes in ~/.local/share/mise"]
+    MiseTools --> Shims["mise shims before Homebrew on PATH"]
+
+    Sync --> Brewfile["Brewfile"]
+    Brewfile --> BrewBundle["brew bundle --no-upgrade"]
+    BrewBundle --> Formulae["Native formulae in /opt/homebrew"]
+    BrewBundle --> Apps["User apps in ~/Applications"]
+
+    Upgrade["./upgrade"] --> Brewfile
+    Upgrade --> MiseConfig
+
+    IT["IT / Jamf apps"] -. "documented, not managed" .-> Brewfile
+    Nix["Existing /nix volume"] -. "unrelated, untouched" .-> Repo
 ```
 
-Rule of thumb: **`sync` installs, `upgrade` bumps, `nuke` removes, `verify` reports.**
-`sync` never upgrades or auto-updates brew — that's why it's fast. Run `./upgrade`
-when you actually want newer versions.
+Homebrew initializes before mise, then mise's stable shim directory is placed
+ahead of Homebrew on `PATH`. This lets Homebrew provide libraries and declared
+exceptions without shadowing mise-managed developer tools.
 
-## Quickstart on a fresh machine
+## Quick start
+
+### Fresh setup
 
 ```bash
-# SSH (if your key is already on the box):
-git clone git@github.com:agomez-arine/environment.git ~/environment
-# OR HTTPS (fresh EC2 / no SSH key yet):
-git clone https://github.com/agomez-arine/environment.git ~/environment
+git clone git@github.com:agomez-arine/alt-env.git ~/environment
 cd ~/environment
-
-# Pick the machine type:
-./bootstrap --profile work        # work mac (workstation + work add-ons)
-./bootstrap --profile personal    # personal machine (workstation + personal)
-./bootstrap --profile server      # headless server (base only)
-./bootstrap --profile base        # bare minimum
-
-# Or interactive prompt:
 ./bootstrap
-
-# Or fast SSH path (no installers, just shell + symlinks):
-./bootstrap --minimal
 ```
 
-## Daily use
+`bootstrap` installs Homebrew and mise when needed, links `home/` into `$HOME`,
+installs the locked mise tools and Brewfile entries, clones the two zsh plugins,
+and installs this repository's Git hooks.
 
-- **Pull repo updates + converge:** `git pull && ./sync` (fast; installs only what's missing, never auto-updates brew)
-- **Upgrade versions (opt-in, slow):** `./upgrade` — runs `brew update && brew upgrade` + `mise upgrade`. Use `./upgrade --dry-run` to preview.
-- **Check for drift:** `./verify` — lists MISSING / ORPHAN / IT-MANAGED packages vs the manifest.
-- **Remove undeclared extras:** `./nuke` (dry-run) then `./nuke --execute`.
-- **Add a tool:** see [`docs/ADDING.md`](docs/ADDING.md) — covers brew, mise, curl-installed, git-cloned, and Mac App Store cases.
+### Daily convergence
 
-## Docs
+```bash
+git pull && ./sync
+```
 
-| File | What's in it |
-|---|---|
-| [`docs/ADDING.md`](docs/ADDING.md) | How to add (or remove) a tool from the manifest |
-| [`docs/tmux.md`](docs/tmux.md) | tmux keybindings + workflows + troubleshooting |
-| [`docs/nvim.md`](docs/nvim.md) | LazyVim layout + customization + cheatsheet |
-| [`docs/zsh.md`](docs/zsh.md) | zsh fragments + adding aliases/functions + plugin model |
-| `manifest.yaml` | What should exist (steady state) |
-| `cleanup.yaml` | What should NOT exist (migration only) |
+### Add a CLI or runtime
+
+Edit `home/.config/mise/config.toml`, then run:
+
+```bash
+mise lock --global
+./sync
+```
+
+### Add a GUI or native dependency
+
+Edit `Brewfile`, then run:
+
+```bash
+./sync
+```
+
+### Upgrade deliberately
+
+```bash
+./upgrade --dry-run
+./upgrade
+```
+
+Review and commit changes to `home/.config/mise/mise.lock` after a mise
+upgrade.
+
+### Remove software
+
+Delete its declaration first. Preview the native cleanup before applying it:
+
+```bash
+brew bundle cleanup --file=~/environment/Brewfile
+brew bundle cleanup --force --file=~/environment/Brewfile
+
+mise lock --global
+mise prune --dry-run
+mise prune --yes
+```
+
+### Diagnose
+
+```bash
+mise install --locked --dry-run
+brew bundle check --no-upgrade --verbose --file=~/environment/Brewfile
+mise doctor
+```
+
+## Ownership rules
+
+Use mise for developer CLIs and runtimes. Use Homebrew Cask for GUI apps. Use
+Homebrew formulae only for native libraries or tools that mise cannot provide
+reliably.
+
+IT/Jamf-managed applications do not belong in the Brewfile. They are listed in
+its comments for visibility, but Homebrew must not adopt them.
+
+## Git metadata
+
+`~/environment/.git/` is local repository metadata. Git never tracks its own
+`.git/` directory, and it should not appear in a diff.
+
+`home/.gitconfig` is different: it is an intentionally tracked dotfile that
+`./sync` links to `~/.gitconfig`. Changes to your global Git configuration can
+therefore appear as changes to `home/.gitconfig`, which is expected. Secrets and
+GitHub login tokens are not stored there.
 
 ## Layout
 
-```
+```text
 ~/environment/
-├── README.md            # this file
-├── bootstrap            # one-time setup (curl-installs mise/rustup, symlinks)
-├── sync                 # idempotent re-runner (regen out/, brew bundle, mise install)
-├── upgrade              # opt-in SLOW path: brew update/upgrade + mise upgrade
-├── verify               # report drift: missing / orphan / IT-managed vs manifest
-├── nuke                 # inverse of sync: remove what's installed but NOT declared
-├── generate.py          # manifest.yaml → out/* (uv-script with inline deps)
-├── manifest.yaml        # source of truth: positive state
-├── cleanup.yaml         # source of truth: negative state
-├── docs/                # tips for tmux, nvim, zsh, manifest editing
-├── home/                # mirrors $HOME — symlinked into ~ at bootstrap
-├── out/                 # generated artifacts (committed for fresh-box install)
-├── docker/              # cross-OS test harness
-└── local/               # gitignored per-machine overrides (identity, secrets)
+├── Brewfile                    # GUI apps and Homebrew exceptions
+├── bootstrap                   # one-time setup
+├── sync                        # missing-only convergence
+├── upgrade                     # explicit update path
+├── home/                       # mirrors $HOME and is symlinked into place
+│   └── .config/mise/
+│       ├── config.toml         # developer tools
+│       └── mise.lock           # resolved versions and artifacts
+├── docs/                       # tool notes and migration research
+└── local/                      # untracked machine secrets and overrides
 ```
 
-## How profiles work
-
-Profiles are additive. The active set on a machine is the union of:
-- `base` (always)
-- any profile whose marker file exists at `~/.config/environment/profile-<name>`
-- any profile transitively reached via `requires:` in `manifest.yaml`
-
-Setting `--profile work` creates the `profile-work` marker. The requires chain
-(`work → workstation → base`) is then resolved at install time. One marker,
-three profiles activated.
-
-## Cross-OS
-
-| OS | Tested |
-|---|---|
-| macOS Sequoia | yes (work mac) |
-| Ubuntu 24.04 | docker-tested (12/12 scenarios) |
-| Fedora 41 | docker-tested |
-| Arch Linux | docker-tested |
+The repository intentionally targets the work Mac. Project-specific tool
+versions belong in each project's own `mise.toml` or language lockfile.

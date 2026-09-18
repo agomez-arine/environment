@@ -12,10 +12,8 @@ home/.config/zsh/
 ├── aliases.zsh               # conditional aliases (eza, fd, bat, ...)
 ├── functions.zsh             # extract, uuid, ...
 ├── git.zsh                   # gst, gco, gp, gpu, gl, gd, gs, gcm, gsu, gdf
-├── os-darwin.zsh             # mac-only: brew shellenv
-├── os-linux.zsh              # linux-only: pbcopy/pbpaste shims, fdfind/batcat aliases
-├── profile-work.zsh          # sourced if ~/.config/environment/profile-work exists
-├── profile-personal.zsh      # sourced if ~/.config/environment/profile-personal exists
+├── os-darwin.zsh             # Homebrew shellenv; runs before mise activation
+├── profile-work.zsh          # work environment and Kiro shell integration
 └── plugins/                  # git-cloned at bootstrap (NOT in repo)
     ├── zsh-autosuggestions/  # ghost-text completion (gray)
     └── zsh-syntax-highlighting/
@@ -27,18 +25,14 @@ No numeric prefixes. Read top-to-bottom:
 
 ```bash
 source $ZDOTDIR/environment.zsh     # FIRST — sets PATH for everything else
-source $ZDOTDIR/tools.zsh           # tool inits (mise needs PATH)
+source $ZDOTDIR/os-darwin.zsh       # Homebrew first
+source $ZDOTDIR/tools.zsh           # mise gets final tool PATH ownership
 source $ZDOTDIR/aliases.zsh
 source $ZDOTDIR/functions.zsh
 source $ZDOTDIR/git.zsh
+source $ZDOTDIR/profile-work.zsh
 
-case "$OSTYPE" in
-  darwin*) source $ZDOTDIR/os-darwin.zsh ;;
-  linux*)  source $ZDOTDIR/os-linux.zsh  ;;
-esac
-
-# profile-* sourced if marker file exists in ~/.config/environment/
-# plugins glob-loaded after that
+# plugins are loaded after that
 ```
 
 ## Adding an alias
@@ -49,7 +43,7 @@ Edit `home/.config/zsh/aliases.zsh` (always-available) or `home/.config/zsh/git.
 
 Edit `home/.config/zsh/functions.zsh`. Same reload pattern.
 
-## Adding a profile-specific alias
+## Adding a work alias
 
 E.g., something only on the work mac:
 
@@ -57,8 +51,6 @@ E.g., something only on the work mac:
 # In home/.config/zsh/profile-work.zsh
 alias adev='aws sso login --profile arine-dev'
 ```
-
-Marker file gates it. Doesn't load on personal machines.
 
 ## Local-only overrides
 

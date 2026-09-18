@@ -1,94 +1,28 @@
 #!/usr/bin/env bash
-# upgrade — the SLOW, opt-in path. Run this when YOU want newer versions.
-#
-# `sync` deliberately never updates Homebrew metadata or upgrades installed
-# packages, so it stays fast. This script does the expensive work:
-#   1. brew update            (git-fetch all taps — the slow part)
-#   2. brew upgrade           (formulae + outdated casks)
-#   3. brew bundle (Brewfile) (install anything still missing, with upgrades)
-#   4. mise upgrade           (bump mise-managed tools within their constraints)
-#   5. mise prune (optional)  (drop versions no longer referenced)
-#
-# IT/Jamf-managed casks are excluded from the generated Brewfiles, so this
-# won't bang against the IT sudo wall.
-#
-# Usage:
-#   ./upgrade            # update + upgrade everything for active profiles
-#   ./upgrade --dry-run  # show what WOULD upgrade, change nothing
+# Upgrade packages within the ranges declared by mise and Homebrew.
 
 set -euo pipefail
 
 ENV_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$ENV_DIR"
 
-MARKER_DIR="$HOME/.config/environment"
 DRY_RUN=0
 [[ "${1:-}" == "--dry-run" || "${1:-}" == "-n" ]] && DRY_RUN=1
 
-# ───────── detect OS ─────────
-case "$(uname -s)" in
-  Darwin) OS=mac ;;
-  Linux)  OS=linux ;;
-  *) echo "unsupported OS: $(uname -s)" >&2; exit 1 ;;
-esac
-
-# ───────── resolve active profiles (same logic as sync) ─────────
-ACTIVE=("base")
-[[ -f "$MARKER_DIR/profile-workstation" ]] && ACTIVE+=("workstation")
-[[ -f "$MARKER_DIR/profile-work" ]]        && ACTIVE+=("workstation" "work")
-[[ -f "$MARKER_DIR/profile-personal" ]]    && ACTIVE+=("workstation" "personal")
-[[ -f "$MARKER_DIR/profile-server" ]]      && ACTIVE+=("server")
-PROFILES=$(printf '%s\n' "${ACTIVE[@]}" | sort -u | paste -sd, -)
-
-echo "═══ upgrade ═══"
-echo "host:     $(hostname)"
-echo "os:       $OS"
-echo "profiles: $PROFILES"
-[[ $DRY_RUN -eq 1 ]] && echo "mode:     DRY RUN (no changes)"
-echo
-
-have() { command -v "$1" >/dev/null 2>&1; }
-
-# ───────── 1+2+3. Homebrew (mac only) ─────────
-if [[ "$OS" == "mac" ]] && have brew; then
-  if [[ $DRY_RUN -eq 1 ]]; then
-    echo "→ brew update (skipped in dry-run)"
-    echo "→ outdated formulae/casks:"
-    brew outdated 2>&1 | sed 's/^/    /' || true
-  else
-    echo "→ brew update"
-    brew update 2>&1 | sed 's/^/    /' || echo "  ! brew update had errors" >&2
-    echo "→ brew upgrade"
-    brew upgrade 2>&1 | sed 's/^/    /' || echo "  ! brew upgrade had errors" >&2
-    # Brewfile pass: install/upgrade anything declared but missing/outdated.
-    export HOMEBREW_BUNDLE_NO_LOCK=1
-    IFS=, read -ra PROF_LIST <<< "$PROFILES"
-    for p in "${PROF_LIST[@]}"; do
-      bf="$ENV_DIR/out/Brewfile.$p"
-      if [[ -f "$bf" ]] && grep -qE '^(brew|cask|tap)' "$bf"; then
-        echo "→ brew bundle install --file=$(basename "$bf")"
-        brew bundle install --file="$bf" 2>&1 | sed 's/^/    /' || true
-      fi
-    done
-  fi
-fi
-
-# ───────── 4. mise upgrade ─────────
-if have mise; then
-  if [[ $DRY_RUN -eq 1 ]]; then
-    echo "→ mise outdated:"
-    mise outdated 2>&1 | sed 's/^/    /' || true
-  else
-    echo "→ mise upgrade"
-    mise upgrade 2>&1 | sed 's/^/    /' || echo "  ! mise upgrade had errors" >&2
-  fi
-else
-  echo "  · mise not installed; skipping"
-fi
-
-echo
 if [[ $DRY_RUN -eq 1 ]]; then
-  echo "✓ dry-run complete (nothing changed)"
-else
-  echo "✓ upgrade complete"
+  echo "→ Homebrew packages with updates"
+  HOMEBREW_NO_AUTO_UPDATE=1 brew outdated || true
+  echo "→ mise upgrade preview"
+  mise upgrade --dry-run
+  exit 0
 fi
+
+echo "→ updating Homebrew metadata"
+brew update
+echo "→ upgrading declared Brewfile entries"
+brew bundle install --file="$ENV_DIR/Brewfile"
+echo "→ upgrading mise tools and lockfile"
+mise upgrade
+
+echo
+echo "✓ upgrade complete; review and commit config/lock changes"

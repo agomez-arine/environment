@@ -1,224 +1,38 @@
 #!/usr/bin/env bash
-# bootstrap — one-time-per-machine setup.
-#
-# Modes:
-#   ./bootstrap                    interactive prompt for profile
-#   ./bootstrap --profile NAME     non-interactive (work|personal|server|base)
-#   ./bootstrap --minimal          fast SSH path: shell + symlinks only,
-#                                  no mise/brew/claude-code
-#
-# Idempotent — safe to re-run.
+# One-time setup for the work Mac. Safe to re-run.
 
 set -euo pipefail
 
-# ───────── locate self ─────────
 ENV_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$ENV_DIR"
 
-MARKER_DIR="$HOME/.config/environment"
-mkdir -p "$MARKER_DIR"
-
-# ───────── parse args ─────────
-PROFILE=""
-MINIMAL=0
-INTERACTIVE=1
-while [[ $# -gt 0 ]]; do
-  case "$1" in
-    --profile) PROFILE="$2"; INTERACTIVE=0; shift 2 ;;
-    --minimal) MINIMAL=1; INTERACTIVE=0; shift ;;
-    -h|--help)
-      cat <<EOF
-Usage: ./bootstrap [--profile NAME | --minimal]
-
-Modes:
-  (no args)             prompt for profile interactively
-  --profile work        set up work mac (workstation + work)
-  --profile personal    set up personal machine (workstation + personal)
-  --profile server      set up headless server (base only)
-  --profile base        set up bare minimum (no marker file beyond base)
-  --minimal             FAST: shell + symlinks only, no installers
-EOF
-      exit 0
-      ;;
-    *) echo "unknown arg: $1" >&2; exit 1 ;;
-  esac
-done
-
-# ───────── detect OS ─────────
-case "$(uname -s)" in
-  Darwin) OS=mac ;;
-  Linux)  OS=linux ;;
-  *) echo "unsupported OS: $(uname -s)" >&2; exit 1 ;;
-esac
-
-echo "═══ bootstrap ═══"
-echo "host:  $(uname -n)"
-echo "os:    $OS"
-echo "dir:   $ENV_DIR"
-echo
-
-# ───────── interactive prompt ─────────
-if [[ $INTERACTIVE -eq 1 ]] && [[ $MINIMAL -eq 0 ]]; then
-  echo "What kind of machine is this?"
-  echo "  1) work       — work mac (workstation + work add-ons)"
-  echo "  2) personal   — personal machine (workstation + personal add-ons)"
-  echo "  3) server     — headless server (base only)"
-  echo "  4) base       — bare minimum, no add-ons"
-  echo "  5) cancel"
-  read -rp "> " choice
-  case "$choice" in
-    1) PROFILE=work ;;
-    2) PROFILE=personal ;;
-    3) PROFILE=server ;;
-    4) PROFILE=base ;;
-    *) echo "cancelled"; exit 0 ;;
-  esac
+if [[ "$(uname -s)" != "Darwin" ]]; then
+  echo "bootstrap supports the work Mac only" >&2
+  exit 1
 fi
 
-# ───────── set marker file ─────────
-if [[ $MINIMAL -eq 0 ]] && [[ -n "$PROFILE" ]] && [[ "$PROFILE" != "base" ]]; then
-  case "$PROFILE" in
-    workstation|work|personal|server)
-      touch "$MARKER_DIR/profile-$PROFILE"
-      echo "→ marker set: $MARKER_DIR/profile-$PROFILE"
-      ;;
-    *) echo "unknown profile: $PROFILE" >&2; exit 1 ;;
-  esac
-fi
-
-# ───────── shared functions ─────────
 have() { command -v "$1" >/dev/null 2>&1; }
 
-# Symlink everything in home/ into $HOME (cross-OS).
-# Real files (not symlinks) are backed up to ~/.environment-backup-<timestamp>/
-# before being replaced — so a stock distro's default .zshrc/.bashrc gets
-# preserved and replaced cleanly.
-do_symlinks() {
-  echo "→ symlinking home/ into \$HOME"
-  if [[ ! -d "$ENV_DIR/home" ]]; then
-    echo "  (home/ dir missing — skipping)"
-    return 0
-  fi
-  local backup_dir="$HOME/.environment-backup-$(date +%Y%m%d-%H%M%S)"
-  local backup_used=0
-  while IFS= read -r -d '' src; do
-    rel="${src#$ENV_DIR/home/}"
-    dst="$HOME/$rel"
-    mkdir -p "$(dirname "$dst")"
-    if [[ -e "$dst" ]] && [[ ! -L "$dst" ]]; then
-      # Back up the real file before clobbering
-      [[ $backup_used -eq 0 ]] && { mkdir -p "$backup_dir"; backup_used=1; }
-      mkdir -p "$(dirname "$backup_dir/$rel")"
-      mv "$dst" "$backup_dir/$rel"
-      echo "  ! backed up real file: $dst → $backup_dir/$rel"
-    fi
-    ln -sfn "$src" "$dst"
-  done < <(find "$ENV_DIR/home" -type f -print0)
-  if [[ $backup_used -eq 1 ]]; then
-    echo "  (originals saved in $backup_dir)"
-  fi
-  return 0
-}
-
-# Clone, pin, and run install: directives for every git_clone in manifest.yaml
-# (zsh plugins, vendored scripts like tmux-sessionizer, etc.)
-do_git_clones() {
-  if [[ ! -x "$ENV_DIR/git-clone-sync.py" ]]; then
-    echo "  ! git-clone-sync.py missing or not executable; skipping"
-    return 0
-  fi
-  if ! have uv; then
-    echo "  ! uv not found yet; skipping git-clone-sync (will run on next sync)"
-    return 0
-  fi
-  echo "→ git-clone-sync (clone + pin + install)"
-  "$ENV_DIR/git-clone-sync.py" 2>&1 | sed 's/^/    /' || {
-    echo "  ! git-clone-sync had errors; continuing" >&2
-  }
-}
-
-# Install this repo's git hooks (lefthook). Delegated to the standalone
-# ./install-hooks script to keep hook setup modular and independently runnable.
-# Only matters for committing/pushing FROM this repo; no-ops if lefthook isn't
-# present yet, so it's safe to call even when sync hasn't installed it.
-do_install_hooks() {
-  if [[ -x "$ENV_DIR/install-hooks" ]]; then
-    "$ENV_DIR/install-hooks" || echo "  ! install-hooks had errors; continuing" >&2
-  fi
-}
-
-# ───────── --minimal: fast SSH path ─────────
-if [[ $MINIMAL -eq 1 ]]; then
-  echo "→ minimal mode: shell + symlinks only"
-  do_symlinks
-  do_git_clones
-  echo
-  echo "✓ minimal bootstrap complete. Open a new shell."
-  exit 0
-fi
-
-# ───────── full mode ─────────
-
-# Install Homebrew (mac only) via the official installer. Idempotent: skipped
-# if brew already exists. After install, load its shellenv into THIS process so
-# the later `have brew` check (in sync's brew-bundle pass) succeeds on a fresh
-# Mac without needing a new shell.
-if [[ "$OS" == "mac" ]] && ! have brew; then
-  echo "→ installing Homebrew (curl)"
+if ! have brew; then
+  echo "→ installing Homebrew"
   NONINTERACTIVE=1 /bin/bash -c \
-    "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" 2>&1 \
-    | sed 's/^/    /' || {
-      echo "  ! Homebrew install failed; continuing (brew packages will be skipped)" >&2
-    }
-  # Apple Silicon installs to /opt/homebrew; Intel to /usr/local.
-  if [[ -x /opt/homebrew/bin/brew ]]; then
-    eval "$(/opt/homebrew/bin/brew shellenv)"
-  elif [[ -x /usr/local/bin/brew ]]; then
-    eval "$(/usr/local/bin/brew shellenv)"
-  fi
+    "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 fi
 
-# Install mise via curl
+if [[ -x /opt/homebrew/bin/brew ]]; then
+  eval "$(/opt/homebrew/bin/brew shellenv)"
+elif [[ -x /usr/local/bin/brew ]]; then
+  eval "$(/usr/local/bin/brew shellenv)"
+fi
+
 if ! have mise; then
-  echo "→ installing mise (curl)"
-  curl https://mise.run | sh 2>&1 | sed 's/^/    /' || {
-    echo "  ! mise install failed; continuing anyway" >&2
-  }
-  # mise installs to ~/.local/bin
+  echo "→ installing mise"
+  curl https://mise.run | sh
   export PATH="$HOME/.local/bin:$PATH"
 fi
 
-# Profile-gated installs (skip for `base` and `server`)
-case "$PROFILE" in
-  workstation|work|personal)
-    # Rust is installed via mise (registry entry `rust`, mise rustup backend) by
-    # the `sync` pass below — no curl bootstrap needed here anymore.
-    if ! have claude && ! have claude-code; then
-      echo "→ installing claude-code (curl)"
-      curl -fsSL https://claude.ai/install.sh | bash 2>&1 | sed 's/^/    /' || {
-        echo "  ! claude-code install failed; continuing" >&2
-      }
-    fi
-    ;;
-esac
-
-# Symlinks + git clones (zsh plugins, tmux-sessionizer, etc.)
-do_symlinks
-do_git_clones
-
-# Hand off to sync for the package install pass
-if [[ -x "$ENV_DIR/sync" ]]; then
-  echo
-  echo "→ running sync"
-  "$ENV_DIR/sync"
-else
-  echo "  ! sync script not found or not executable; skipping" >&2
-fi
-
-# Wire up git hooks now that sync has installed lefthook (workstation profiles).
-# Kept as a separate step so it's obvious this only affects committing/pushing
-# from this repo, not the machine's package state.
-do_install_hooks
+"$ENV_DIR/sync"
+"$ENV_DIR/install-hooks"
 
 echo
 echo "✓ bootstrap complete. Open a new shell."

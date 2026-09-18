@@ -656,15 +656,11 @@ do
     -- Root-gated: only attaches in projects with pyproject.toml/setup.py/etc, so
     -- it never activates in non-Python projects.
     --
-    -- VENV AUTODETECT: every project here uses a top-level `.venv/`. Without an
-    -- explicit interpreter, pyright relies on the $VIRTUAL_ENV env var, which is
-    -- fragile — if nvim wasn't launched from a shell with the venv activated
-    -- (tmux/restored sessions, opening nvim before `source .venv/bin/activate`),
-    -- pyright falls back to a mise/system python that lacks the project's
-    -- site-packages, producing phantom import errors. before_init below finds a
-    -- `.venv` in the LSP root and points pyright at its interpreter explicitly,
-    -- so it works regardless of how nvim was started. To verify which interpreter
-    -- is live: `:lua =vim.lsp.get_clients({name='pyright'})[1].settings.python`
+    -- VENV AUTODETECT: an explicitly activated $VIRTUAL_ENV wins; otherwise use
+    -- the LSP root's top-level `.venv/`. This lets temporary/script environments
+    -- override a broad repository venv while preserving automatic project-local
+    -- discovery when nvim starts outside an activated environment. To verify which
+    -- interpreter is live: `:PyrightVenv`.
     pyright = {
       before_init = function(_, config)
         local root = config.root_dir
@@ -686,13 +682,16 @@ do
             end
           end
         end
-        -- Prefer a project-local .venv; fall back to $VIRTUAL_ENV if present.
+        -- An activated environment is an explicit choice; otherwise use .venv.
         -- (No bare `python3` fallback on purpose — that would hit a mise shim.)
-        local venv = root .. sep .. '.venv'
-        local py = venv .. sep .. 'bin' .. sep .. 'python'
+        local venv = vim.env.VIRTUAL_ENV
+        local py = venv and (venv .. sep .. 'bin' .. sep .. 'python') or nil
+        if not py or vim.fn.executable(py) == 0 then
+          venv = root .. sep .. '.venv'
+          py = venv .. sep .. 'bin' .. sep .. 'python'
+        end
         if vim.fn.executable(py) == 0 then
-          venv = vim.env.VIRTUAL_ENV
-          py = venv and (venv .. sep .. 'bin' .. sep .. 'python') or nil
+          py = nil
         end
         if py and vim.fn.executable(py) == 1 then
           config.settings = config.settings or {}

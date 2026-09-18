@@ -58,3 +58,57 @@ uuid() {
   fi
   echo "$id"
 }
+
+# Create and activate a disposable environment for an arine_api worktree or PEP 723 script.
+tmpvenv() {
+  command -v uv >/dev/null || { echo "tmpvenv: uv not installed" >&2; return 1; }
+
+  if (( $# > 1 )); then
+    echo "usage: tmpvenv [pep-723-script.py]" >&2
+    return 1
+  fi
+
+  local root name python script venv tmp_root
+  if (( $# == 1 )); then
+    script="${1:A}"
+    if [[ ! -f "$script" ]]; then
+      echo "tmpvenv: script not found: $script" >&2
+      return 1
+    fi
+    python="$(uv python find --script "$script")" || return
+    name="${script:h:h:t}-${script:h:t}-${script:t:r}"
+  else
+    root="$(git rev-parse --show-toplevel 2>/dev/null)" || {
+      echo "tmpvenv: not inside a Git worktree" >&2
+      return 1
+    }
+
+    local dev_requirements="$root/dev_requirements.txt"
+    local app_requirements="$root/layers/arine_api/requirements.txt"
+    if [[ ! -f "$dev_requirements" || ! -f "$app_requirements" ]]; then
+      echo "tmpvenv: expected arine_api requirement files under $root" >&2
+      return 1
+    fi
+
+    python=3.10
+    name="${root:h:t}-${root:t}"
+  fi
+
+  name="${name//[^A-Za-z0-9._-]/-}"
+  tmp_root="${TMPDIR:-/tmp}"
+  venv="${tmp_root%/}/${name}-$(date +%Y%m%d-%H%M%S)-$$"
+
+  uv venv --python "$python" --prompt "$name" "$venv" || return
+  if [[ -n "$script" ]]; then
+    VIRTUAL_ENV="$venv" uv sync --script "$script" --active || return
+    uv pip install --python "$venv/bin/python" debugpy || return
+  else
+    uv pip install --python "$venv/bin/python" \
+      -r "$dev_requirements" \
+      -r "$app_requirements" \
+      debugpy || return
+  fi
+
+  source "$venv/bin/activate"
+  echo "Activated temporary environment: $venv"
+}

@@ -1,7 +1,27 @@
-# Generated from manifest.yaml — do not edit by hand.
-# Profile: workstation, target OS: mac
+# Work Mac developer tools. This is the source of truth for mise.
 
 [tools]
+node = "22.14.0"
+python = ["3.14.7", "3.13.15", "3.12.14", "3.11.16", "3.10.21"]
+uv = "0.12.5"
+
+neovim = "latest"
+starship = "latest"
+atuin = "latest"
+tmux = "latest"
+zellij = "latest"
+bat = "latest"
+fd = "latest"
+ripgrep = "latest"
+fzf = "latest"
+eza = "latest"
+zoxide = "latest"
+yazi = "latest"
+gh = "latest"
+jq = "latest"
+direnv = "latest"
+awscli = "latest"
+snyk = "latest"
 terraform = "latest"
 terragrunt = "latest"
 bun = "latest"
@@ -18,22 +38,24 @@ gitleaks = "latest"
 shfmt = "latest"
 shellcheck = "latest"
 zizmor = "latest"
+tree-sitter = "latest"
 lua-language-server = "latest"
 act = "latest"
 fastfetch = "latest"
 k6 = "latest"
 typst = "latest"
-uv = "0.12.5"
 tflint = "latest"
 opencode = "latest"
+claude-code = "latest"
 pandoc = "latest"
 pnpm = "latest"
 mas = "latest"
 git-lfs = "latest"
+git-filter-repo = "latest"
 rust = "stable"
 
 [settings]
 experimental = true
 auto_install = true
 lockfile = true
-minimum_release_age = "7d"   # supply-chain mitigation: refuse versions released <7 days ago
+minimum_release_age = "7d"

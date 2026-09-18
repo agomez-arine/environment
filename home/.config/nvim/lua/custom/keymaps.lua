@@ -53,6 +53,8 @@ nm('<A-j>', '<cmd>m .+1<CR>==', 'Move line down')
 nm('<A-k>', '<cmd>m .-2<CR>==', 'Move line up')
 vm('<', '<gv', 'Indent left, keep selection')
 vm('>', '>gv', 'Indent right, keep selection')
+vm('<S-Tab>', '<gv', 'Indent left, keep selection')
+vm('<Tab>', '>gv', 'Indent right, keep selection')
 map({ 'n', 'x' }, '<leader>p', [["0p]], { desc = 'Paste from yank register' })
 map('x', '<leader>P', [["_dP]], { desc = 'Paste over selection (no yank)' })
 

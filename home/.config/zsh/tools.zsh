@@ -1,14 +1,19 @@
 # Tool inits — all guarded so a missing tool doesn't break the shell.
 #
-# Order matters in TWO ways:
-#   1. mise must activate FIRST, because it manages (shims) several of the tools
+# Homebrew shellenv must run before this file so mise gets final PATH ownership.
+# Within this file, order matters in TWO ways:
+#   1. mise must activate FIRST, because it manages several of the tools
 #      below — including starship itself. If starship's `command -v` check runs
 #      before mise puts its shim dir on PATH, it short-circuits, starship never
 #      initializes, and you're left with /etc/zshrc's default prompt until you
 #      `exec $SHELL` (which inherits the now-populated PATH). That was the bug.
 #   2. starship's init must run before other tools that hook into the prompt.
 export STARSHIP_CONFIG="$HOME/.config/starship.toml"
-command -v mise     >/dev/null && eval "$(mise activate zsh)"
+if command -v mise >/dev/null; then
+  eval "$(mise activate zsh)"
+  typeset -U path PATH
+  path=("$HOME/.local/share/mise/shims" $path)
+fi
 command -v starship >/dev/null && eval "$(starship init zsh)"
 command -v zoxide   >/dev/null && eval "$(zoxide init zsh)"
 command -v direnv   >/dev/null && eval "$(direnv hook zsh)"
