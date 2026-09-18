@@ -32,6 +32,18 @@ if ! have mise; then
 fi
 
 "$ENV_DIR/sync"
+
+if slinky_bin="$(mise which slinky 2>/dev/null)"; then
+  if [[ -d "$HOME/agent-skills/.git" ]]; then
+    "$slinky_bin" init "$HOME/agent-skills"
+    "$slinky_bin" bootstrap --no-backup
+  else
+    "$slinky_bin" bootstrap \
+      --clone=git@github.com:agomez-arine/agent-skills.git \
+      --dest="$HOME/agent-skills"
+  fi
+fi
+
 "$ENV_DIR/install-hooks"
 
 echo

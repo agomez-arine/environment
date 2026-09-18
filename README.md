@@ -36,6 +36,13 @@ flowchart TD
     MiseConfig --> MiseInstall["mise install --locked"]
     MiseInstall --> MiseTools["CLIs and runtimes in ~/.local/share/mise"]
     MiseTools --> Shims["mise shims before Homebrew on PATH"]
+    MiseTools --> Slinky["Slinky"]
+    Catalog["Private ~/agent-skills catalog"] --> Slinky
+    Slinky --> AgentStore["~/.agents/skills"]
+    Slinky --> ClaudeStore["~/.claude/skills"]
+    AgentStore --> OpenCode["OpenCode"]
+    ClaudeStore --> ClaudeCode["Claude Code"]
+    ClaudeStore --> OpenCode
 
     Sync --> Brewfile["Brewfile"]
     Brewfile --> BrewBundle["brew bundle --no-upgrade"]
@@ -58,14 +65,14 @@ exceptions without shadowing mise-managed developer tools.
 ### Fresh setup
 
 ```bash
-git clone git@github.com:agomez-arine/alt-env.git ~/environment
+git clone git@github.com:agomez-arine/environment.git ~/environment
 cd ~/environment
 ./bootstrap
 ```
 
 `bootstrap` installs Homebrew and mise when needed, links `home/` into `$HOME`,
 installs the locked mise tools and Brewfile entries, clones the two zsh plugins,
-and installs this repository's Git hooks.
+bootstraps the private skills catalog, and installs this repository's Git hooks.
 
 ### Daily convergence
 
@@ -129,6 +136,34 @@ reliably.
 
 IT/Jamf-managed applications do not belong in the Brewfile. They are listed in
 its comments for visibility, but Homebrew must not adopt them.
+
+## Agent skills
+
+[Slinky](https://github.com/gcavanunez/slinky) manages the separate private
+`~/agent-skills` catalog and materializes enabled skills for both Claude Code
+and OpenCode:
+
+```bash
+slinky status
+slinky sync --dry-run
+slinky sync
+slinky                         # open the TUI
+```
+
+Add an upstream skill through Slinky so its provenance stays recorded:
+
+```bash
+slinky skills add owner/repo --skill skill-name
+slinky update --check
+```
+
+Do not edit the materialized copies under `~/.agents/skills` or
+`~/.claude/skills`. Edit local catalog skills through Slinky, and accept or
+restore vendor updates through its review workflow.
+
+`./bootstrap` clones and reconciles the private catalog on a fresh Mac. Slinky
+sync remains explicit because it can save catalog changes, pull its repository,
+and restore vendor drift.
 
 ## Git metadata
 

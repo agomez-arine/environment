@@ -52,6 +52,7 @@ pnpm = "latest"
 mas = "latest"
 git-lfs = "latest"
 git-filter-repo = "latest"
+"npm:@gcavanunez/slinky" = "0.2.1"
 rust = "stable"
 
 [settings]
