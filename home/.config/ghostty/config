@@ -4,4 +4,5 @@ shell-integration = zsh
 macos-option-as-alt = left
 cursor-style = block
 cursor-style-blink = false
-shell-integration-features = no-cursor
+copy-on-select = clipboard
+shell-integration-features = no-cursor,ssh-env,ssh-terminfo

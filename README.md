@@ -2,6 +2,15 @@
 
 Work Mac dotfiles and package configuration.
 
+## Weekly
+```
+cd ~/environment
+mise self-update
+./upgrade --dry-run
+./upgrade
+```
+
+
 ## TL;DR
 
 - Developer runtimes and CLIs are declared directly in
@@ -103,7 +112,32 @@ Edit `Brewfile`, then run:
 ```
 
 Review and commit changes to `home/.config/mise/mise.lock` after a mise
-upgrade.
+upgrade. The upgrade script updates mise tools and declared Homebrew formulae.
+It reports cask updates but does not apply them automatically because legacy
+apps under `/Applications` can trigger the corporate sudo gate. GUI apps that
+support self-updates remain responsible for their own updates.
+
+Upgrade one mise tool without touching the others:
+
+```bash
+mise upgrade claude-code
+```
+
+### Track personal configuration changes
+
+Neovim, tmux, and Ghostty behavior follows `agosmou/environment`, translated
+from Nix to this Mac's mise/Brew/Mason ownership. Check only those upstream
+areas with:
+
+```bash
+./check-upstream
+```
+
+After reviewing and porting reported changes, record the new audited state:
+
+```bash
+./check-upstream --update
+```
 
 ### Remove software
 

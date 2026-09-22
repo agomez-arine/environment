@@ -10,6 +10,7 @@
 #   -o login        → belt-and-suspenders; .zlogin already implies login
 #   -o interactive  → skip non-interactive login shells
 #   [ -t 1 ]        → stdout is a TTY (skip when output is piped/redirected)
-if [[ -o interactive ]] && [[ -t 1 ]] && command -v fastfetch >/dev/null 2>&1; then
+if [[ -z "${FASTFETCH_SHOWN:-}" ]] && [[ -o interactive ]] && [[ -t 1 ]] && command -v fastfetch >/dev/null 2>&1; then
+  export FASTFETCH_SHOWN=1
   fastfetch
 fi

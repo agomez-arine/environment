@@ -6,23 +6,62 @@ set -euo pipefail
 ENV_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$ENV_DIR"
 
+# Use the existing gh keychain login for authenticated release checks without
+# storing a token in this repository or the shell profile.
+if [[ -z "${MISE_GITHUB_TOKEN:-}" ]] && command -v gh >/dev/null 2>&1; then
+  github_token="$(gh auth token 2>/dev/null || true)"
+  [[ -n "$github_token" ]] && export MISE_GITHUB_TOKEN="$github_token"
+  unset github_token
+fi
+
 DRY_RUN=0
 [[ "${1:-}" == "--dry-run" || "${1:-}" == "-n" ]] && DRY_RUN=1
 
+formulae=()
+while IFS= read -r item; do
+  [[ -n "$item" ]] && formulae+=("$item")
+done < <(brew bundle list --formula --file="$ENV_DIR/Brewfile")
+
+casks=()
+while IFS= read -r item; do
+  [[ -n "$item" ]] && casks+=("$item")
+done < <(brew bundle list --cask --file="$ENV_DIR/Brewfile")
+
 if [[ $DRY_RUN -eq 1 ]]; then
-  echo "→ Homebrew packages with updates"
-  HOMEBREW_NO_AUTO_UPDATE=1 brew outdated || true
   echo "→ mise upgrade preview"
   mise upgrade --dry-run
+  echo "→ declared Homebrew formulae with updates"
+  HOMEBREW_NO_AUTO_UPDATE=1 brew outdated --formula "${formulae[@]}" || true
+  echo "→ declared Homebrew casks with updates (reported only; not auto-upgraded)"
+  HOMEBREW_NO_AUTO_UPDATE=1 brew outdated --cask "${casks[@]}" || true
   exit 0
 fi
 
+echo "→ upgrading mise tools and lockfile"
+mise upgrade --yes
+
 echo "→ updating Homebrew metadata"
 brew update
-echo "→ upgrading declared Brewfile entries"
-brew bundle install --file="$ENV_DIR/Brewfile"
-echo "→ upgrading mise tools and lockfile"
-mise upgrade
+echo "→ installing missing Brewfile entries without upgrading casks"
+brew bundle install --no-upgrade --file="$ENV_DIR/Brewfile"
+
+outdated_formulae=()
+while IFS= read -r item; do
+  [[ -n "$item" ]] && outdated_formulae+=("$item")
+done < <(HOMEBREW_NO_AUTO_UPDATE=1 brew outdated --formula "${formulae[@]}")
+
+if [[ ${#outdated_formulae[@]} -gt 0 ]]; then
+  echo "→ upgrading declared Homebrew formulae"
+  HOMEBREW_NO_AUTO_UPDATE=1 brew upgrade --formula "${outdated_formulae[@]}"
+else
+  echo "→ declared Homebrew formulae already current"
+fi
+
+outdated_casks="$(HOMEBREW_NO_AUTO_UPDATE=1 brew outdated --cask "${casks[@]}" || true)"
+if [[ -n "$outdated_casks" ]]; then
+  echo "→ cask updates available but skipped (GUI apps may self-update):"
+  printf '%s\n' "$outdated_casks"
+fi
 
 echo
 echo "✓ upgrade complete; review and commit config/lock changes"

@@ -53,8 +53,6 @@ nm('<A-j>', '<cmd>m .+1<CR>==', 'Move line down')
 nm('<A-k>', '<cmd>m .-2<CR>==', 'Move line up')
 vm('<', '<gv', 'Indent left, keep selection')
 vm('>', '>gv', 'Indent right, keep selection')
-vm('<S-Tab>', '<gv', 'Indent left, keep selection')
-vm('<Tab>', '>gv', 'Indent right, keep selection')
 map({ 'n', 'x' }, '<leader>p', [["0p]], { desc = 'Paste from yank register' })
 map('x', '<leader>P', [["_dP]], { desc = 'Paste over selection (no yank)' })
 
@@ -99,7 +97,7 @@ vim.api.nvim_create_autocmd('LspAttach', {
     map('n', 'gy', vim.lsp.buf.type_definition, opts('Go to type definition (alias of grt)'))
     map('n', '<leader>cr', vim.lsp.buf.rename,      opts('Rename (alias of grn)'))
     map('n', '<leader>ca', vim.lsp.buf.code_action, opts('Code action (alias of gra)'))
-    map('n', '<leader>cf', function() vim.lsp.buf.format({ async = true }) end, opts('Format (alias of <leader>f)'))
+    map('n', '<leader>cf', function() require('conform').format { async = true } end, opts('Format (alias of <leader>f)'))
   end,
 })
 
@@ -134,8 +132,15 @@ nm('<leader>e', '<cmd>Neotree toggle<CR>', 'File explorer (alias of \\)')
 -- ── dax cherry-pick: run shell cmd in current file's dir ────────────────
 local function run_in_dir()
   vim.ui.input({ prompt = 'Command: ' }, function(cmd)
-    if not cmd then return end
-    vim.cmd(('!cd %s && %s'):format(vim.fn.expand('%:p:h'), cmd))
+    if not cmd or cmd == '' then return end
+    local dir = vim.fn.expand '%:p:h'
+    vim.system({ 'sh', '-c', cmd }, { cwd = dir, text = true }, function(result)
+      vim.schedule(function()
+        local out = (result.stdout or '') .. (result.stderr or '')
+        local level = result.code == 0 and vim.log.levels.INFO or vim.log.levels.ERROR
+        vim.notify(('[%s] $ %s\n%s'):format(vim.fn.fnamemodify(dir, ':~'), cmd, out), level)
+      end)
+    end)
   end)
 end
 nm('<leader>R', run_in_dir, "Run cmd in file's dir")

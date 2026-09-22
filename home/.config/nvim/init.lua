@@ -343,20 +343,8 @@ do
   -- since otherwise the icons won't display properly.
   if vim.g.have_nerd_font then vim.pack.add { gh 'nvim-tree/nvim-web-devicons' } end
 
-  -- Here is a more advanced configuration example that passes options to `gitsigns.nvim`
-  --
-  -- See `:help gitsigns` to understand what each configuration key does.
-  -- Adds git related signs to the gutter, as well as utilities for managing changes
-  vim.pack.add { gh 'lewis6991/gitsigns.nvim' }
-  require('gitsigns').setup {
-    signs = {
-      add = { text = '+' }, ---@diagnostic disable-line: missing-fields
-      change = { text = '~' }, ---@diagnostic disable-line: missing-fields
-      delete = { text = '_' }, ---@diagnostic disable-line: missing-fields
-      topdelete = { text = '‾' }, ---@diagnostic disable-line: missing-fields
-      changedelete = { text = '~' }, ---@diagnostic disable-line: missing-fields
-    },
-  }
+  -- gitsigns.nvim (gutter signs, hunk actions, blame) is installed and
+  -- configured once in lua/kickstart/plugins/gitsigns.lua.
 
   -- Useful plugin to show you pending keybinds.
   vim.pack.add { gh 'folke/which-key.nvim' }
@@ -643,80 +631,36 @@ do
   ---@type table<string, vim.lsp.Config>
   local servers = {
     -- clangd = {},
-    -- gopls = {},
+    gopls = {},
+    -- rust_analyzer is handled by rustaceanvim, which starts its own client.
     -- rust_analyzer = {},
-    --
-    -- Some languages (like typescript) have entire language plugins that can be useful:
-    --    https://github.com/pmizio/typescript-tools.nvim
-    --
-    -- But for many setups, the LSP (`ts_ls`) will work just fine
-    -- ts_ls = {},
+    ts_ls = {},
+    html = {},
+    cssls = {},
+    jsonls = {},
+    eslint = {},
+
+    tinymist = {
+      settings = {
+        formatterMode = 'typstyle',
+      },
+    },
 
     -- Python language features: completion, go-to-def, hover, type checking.
-    -- Root-gated: only attaches in projects with pyproject.toml/setup.py/etc, so
-    -- it never activates in non-Python projects.
-    --
-    -- VENV AUTODETECT: an explicitly activated $VIRTUAL_ENV wins; otherwise use
-    -- the LSP root's top-level `.venv/`. This lets temporary/script environments
-    -- override a broad repository venv while preserving automatic project-local
-    -- discovery when nvim starts outside an activated environment. To verify which
-    -- interpreter is live: `:PyrightVenv`.
-    pyright = {
-      before_init = function(_, config)
-        local root = config.root_dir
-        if not root then
-          return
-        end
-        local sep = package.config:sub(1, 1)
-        -- GUARD: if the project ships its own pyright config, get out of the way
-        -- and let pyright read it natively. Injecting pythonPath here would
-        -- override an intentional pyrightconfig.json / [tool.pyright] block.
-        if vim.fn.filereadable(root .. sep .. 'pyrightconfig.json') == 1 then
-          return
-        end
-        local pyproject = root .. sep .. 'pyproject.toml'
-        if vim.fn.filereadable(pyproject) == 1 then
-          for _, line in ipairs(vim.fn.readfile(pyproject)) do
-            if line:match '^%[tool%.pyright%]' then
-              return
-            end
-          end
-        end
-        -- An activated environment is an explicit choice; otherwise use .venv.
-        -- (No bare `python3` fallback on purpose — that would hit a mise shim.)
-        local venv = vim.env.VIRTUAL_ENV
-        local py = venv and (venv .. sep .. 'bin' .. sep .. 'python') or nil
-        if not py or vim.fn.executable(py) == 0 then
-          venv = root .. sep .. '.venv'
-          py = venv .. sep .. 'bin' .. sep .. 'python'
-        end
-        if vim.fn.executable(py) == 0 then
-          py = nil
-        end
-        if py and vim.fn.executable(py) == 1 then
-          config.settings = config.settings or {}
-          config.settings.python = config.settings.python or {}
-          config.settings.python.pythonPath = py
-          config.settings.python.venvPath = vim.fn.fnamemodify(venv, ':h')
-          config.settings.python.venv = vim.fn.fnamemodify(venv, ':t')
-        end
-      end,
-    },
+    -- Pyrefly resolves an activated venv first, then project-local venvs.
+    pyrefly = {},
 
     -- Ruff LSP: fast lint diagnostics + quick-fixes + import organizing.
     -- Currently OFF. To enable: uncomment the block below.
     --   - It respects each project's [tool.ruff] in pyproject.toml, so it won't
     --     impose rules a project hasn't opted into.
-    --   - We disable its hover so pyright stays the source of hover/types.
-    --   - Formatting stays separate (see conform.nvim below) so ruff won't fight
-    --     black; flip the formatter there when you want ruff to format too.
+    --   - We disable its hover so pyrefly stays the source of hover/types.
+    --   - Formatting is conform.nvim's job below.
     -- ruff = {
     --   on_attach = function(client)
     --     client.server_capabilities.hoverProvider = false
     --   end,
     -- },
-
-    stylua = {}, -- Used to format Lua code
 
     -- Special Lua Config, as recommended by neovim help docs
     lua_ls = {
@@ -756,12 +700,12 @@ do
   vim.pack.add {
     gh 'neovim/nvim-lspconfig',
     gh 'mason-org/mason.nvim',
-    gh 'mason-org/mason-lspconfig.nvim',
     gh 'WhoIsSethDaniel/mason-tool-installer.nvim',
   }
 
-  -- Automatically install LSPs and related tools to stdpath for Neovim
-  require('mason').setup {}
+  -- Mason replaces upstream's Nix-provided Neovim tools. Append its bin path so
+  -- executables explicitly managed by mise remain authoritative.
+  require('mason').setup { PATH = 'append' }
 
   -- Ensure the servers and tools above are installed
   --
@@ -776,31 +720,27 @@ do
   -- which called mason-tool-installer.setup a second time and silently
   -- overrode this one. That file has been deleted; everything lives here now.)
   --
-  -- `servers` keys above are lspconfig names; mason-tool-installer translates
-  -- the common ones. The list below uses mason PACKAGE names (see :Mason).
-  local ensure_installed = vim.tbl_keys(servers or {})
-  vim.list_extend(ensure_installed, {
-    -- LSPs (mason package names)
-    'rust-analyzer',
-    'ruff',
-    'vtsls',
+  local ensure_installed = {
+    -- Language servers
+    'pyrefly',
+    'gopls',
+    'typescript-language-server',
+    'html-lsp',
+    'css-lsp',
     'json-lsp',
-    'yaml-language-server',
-    'taplo',
-    'terraform-ls',
-    'dockerfile-language-server',
-    'marksman',
-    -- Formatters
+    'eslint-lsp',
+    'tinymist',
+    -- Formatters and linters
+    'stylua',
+    'ruff',
     'prettier',
-    'shfmt',
-    'black',
-    -- Linters
-    'shellcheck',
-    'eslint_d',
-    'markdownlint-cli2', -- markdown linting (see lua/kickstart/plugins/lint.lua)
+    'biome',
+    'markdownlint-cli2',
     -- Debug adapters
-    'codelldb', -- Rust/C/C++ DAP adapter (used by rustaceanvim debuggables)
-  })
+    'delve',
+    'codelldb',
+    'debugpy',
+  }
 
   require('mason-tool-installer').setup {
     ensure_installed = ensure_installed,
@@ -814,35 +754,6 @@ do
   end
 end
 
--- :PyrightVenv — print the interpreter pyright actually resolved for the current
--- buffer's client. Reads the python settings our before_init hook injected; if
--- empty (e.g. project ships its own pyrightconfig.json and the hook bowed out),
--- points you at :LspLog where pyright records the path it chose itself.
-vim.api.nvim_create_user_command('PyrightVenv', function()
-  local clients = vim.lsp.get_clients { name = 'pyright', bufnr = 0 }
-  if vim.tbl_isempty(clients) then
-    clients = vim.lsp.get_clients { name = 'pyright' }
-  end
-  if vim.tbl_isempty(clients) then
-    vim.notify('pyright: no active client', vim.log.levels.WARN)
-    return
-  end
-  local c = clients[1]
-  local py = (c.settings and c.settings.python) or (c.config.settings and c.config.settings.python)
-  if py and py.pythonPath then
-    vim.notify(
-      ('pyright interpreter:\n  %s\n  root: %s'):format(py.pythonPath, c.root_dir or '?'),
-      vim.log.levels.INFO
-    )
-  else
-    vim.notify(
-      'pyright did not set pythonPath via the hook (project may have its own '
-        .. 'pyrightconfig.json/[tool.pyright]).\nCheck :LspLog for the resolved path.',
-      vim.log.levels.INFO
-    )
-  end
-end, { desc = 'Show the interpreter/venv pyright resolved for this buffer' })
-
 -- ============================================================
 -- SECTION 6: FORMATTING
 -- conform.nvim setup and keymap
@@ -850,31 +761,6 @@ end, { desc = 'Show the interpreter/venv pyright resolved for this buffer' })
 do
   -- [[ Formatting ]]
   vim.pack.add { gh 'stevearc/conform.nvim' }
-
-  -- Pick the Python formatter PER PROJECT, not globally. You are NOT forced into
-  -- one default: this inspects the nearest pyproject.toml and uses ruff if the
-  -- project configures ruff (a [tool.ruff] table or ruff in [tool.*]), otherwise
-  -- black. Projects with neither fall through to black as a last resort.
-  local function python_formatter(bufnr)
-    local fname = vim.api.nvim_buf_get_name(bufnr)
-    local found = vim.fs.find('pyproject.toml', {
-      upward = true,
-      path = vim.fs.dirname(fname ~= '' and fname or vim.uv.cwd()),
-    })[1]
-    if found then
-      local ok, contents = pcall(vim.fn.readfile, found)
-      if ok and contents then
-        local text = table.concat(contents, '\n')
-        if text:find('%[tool%.ruff') or text:find('ruff') then
-          return { 'ruff_format' }
-        end
-        if text:find('%[tool%.black%]') then
-          return { 'black' }
-        end
-      end
-    end
-    return { 'black' } -- fallback when no project preference is detected
-  end
 
   require('conform').setup {
     notify_on_error = false,
@@ -893,12 +779,15 @@ do
     },
     -- You can also specify external formatters in here.
     formatters_by_ft = {
-      -- rust = { 'rustfmt' },
-      -- Python: per-project choice (ruff vs black) — see python_formatter above.
-      python = python_formatter,
-      --
-      -- You can use 'stop_after_first' to run the first available formatter from the list
-      -- javascript = { "prettierd", "prettier", stop_after_first = true },
+      python = { 'ruff_format' },
+      lua = { 'stylua' },
+      javascript = { 'biome', 'prettier', stop_after_first = true },
+      typescript = { 'biome', 'prettier', stop_after_first = true },
+      javascriptreact = { 'biome', 'prettier', stop_after_first = true },
+      typescriptreact = { 'biome', 'prettier', stop_after_first = true },
+      json = { 'biome', 'prettier', stop_after_first = true },
+      css = { 'prettier' },
+      html = { 'prettier' },
     },
   }
 

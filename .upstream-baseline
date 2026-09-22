@@ -1,0 +1,15 @@
+# Last reviewed upstream state.
+#
+# Local mappings:
+#   home/neovim/config            -> home/.config/nvim
+#   home/tmux                     -> home/.tmux.conf and home/.config/tmux/scripts
+#   home/terminal/ghostty.nix     -> home/.config/ghostty/config and Brewfile
+#
+# Nix package declarations are translated to local Brew/mise/Mason ownership.
+# Review and port changes before running ./check-upstream --update.
+UPSTREAM_URL='https://github.com/agosmou/environment.git'
+UPSTREAM_REF='refs/heads/main'
+BASELINE_COMMIT='4b83ed2a6f7156815bd1eec5091a51cc8e8add14'
+BASELINE_NEOVIM='2a28b08c2335dc1e0da425bf021b4c2f502fd643'
+BASELINE_TMUX='fea75a5579d4a784ef16f54a5b17e73a3fcc82c5'
+BASELINE_GHOSTTY='d09e2b04da7f7c4bb1896afe5ed26a40f250b164'

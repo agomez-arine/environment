@@ -1,0 +1,92 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BASELINE_FILE="$ROOT/.upstream-baseline"
+
+# shellcheck source=/dev/null
+source "$BASELINE_FILE"
+
+mode="${1:---check}"
+case "$mode" in
+  --check | --update) ;;
+  *)
+    echo "usage: $0 [--check|--update]" >&2
+    exit 2
+    ;;
+esac
+
+paths=(
+  "home/neovim"
+  "home/tmux"
+  "home/terminal/ghostty.nix"
+)
+expected=(
+  "$BASELINE_NEOVIM"
+  "$BASELINE_TMUX"
+  "$BASELINE_GHOSTTY"
+)
+
+git -C "$ROOT" fetch --quiet --no-tags "$UPSTREAM_URL" "$UPSTREAM_REF"
+tip="$(git -C "$ROOT" rev-parse 'FETCH_HEAD^{commit}')"
+
+actual=()
+changed=0
+for ((i = 0; i < ${#paths[@]}; i++)); do
+  if value="$(git -C "$ROOT" rev-parse "$tip:${paths[$i]}" 2>/dev/null)"; then
+    actual+=("$value")
+  else
+    actual+=("MISSING")
+  fi
+
+  if [[ "${actual[$i]}" != "${expected[$i]}" ]]; then
+    changed=1
+    printf '%s\n  baseline: %s\n  upstream: %s\n' \
+      "${paths[$i]}" "${expected[$i]}" "${actual[$i]}"
+  fi
+done
+
+if [[ $changed -eq 0 ]]; then
+  echo "Scoped upstream paths unchanged at $tip"
+  exit 0
+fi
+
+echo
+echo "Baseline commit: $BASELINE_COMMIT"
+echo "Upstream commit: $tip"
+if git -C "$ROOT" cat-file -e "$BASELINE_COMMIT^{commit}" 2>/dev/null; then
+  git -C "$ROOT" --no-pager diff --name-status \
+    "$BASELINE_COMMIT" "$tip" -- "${paths[@]}"
+else
+  echo "Baseline commit object unavailable; object-ID comparison remains valid."
+fi
+
+if [[ "$mode" == "--check" ]]; then
+  echo
+  echo "Review and port the scoped changes, then run: $0 --update"
+  exit 1
+fi
+
+for value in "${actual[@]}"; do
+  if [[ "$value" == "MISSING" ]]; then
+    echo "Refusing to accept a baseline with a missing tracked path." >&2
+    exit 2
+  fi
+done
+
+tmp="$(mktemp "${BASELINE_FILE}.XXXXXX")"
+trap 'rm -f "$tmp"' EXIT
+{
+  sed -n '1,/^UPSTREAM_URL=/p' "$BASELINE_FILE" | sed '$d'
+  printf "UPSTREAM_URL='%s'\n" "$UPSTREAM_URL"
+  printf "UPSTREAM_REF='%s'\n" "$UPSTREAM_REF"
+  printf "BASELINE_COMMIT='%s'\n" "$tip"
+  printf "BASELINE_NEOVIM='%s'\n" "${actual[0]}"
+  printf "BASELINE_TMUX='%s'\n" "${actual[1]}"
+  printf "BASELINE_GHOSTTY='%s'\n" "${actual[2]}"
+} >"$tmp"
+mv "$tmp" "$BASELINE_FILE"
+trap - EXIT
+
+echo "Updated $BASELINE_FILE; review its Git diff before committing."

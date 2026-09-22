@@ -49,10 +49,10 @@ vim.g.rustaceanvim = {
   dap = {},
 }
 
-vim.pack.add {
+vim.pack.add({
   -- Pin to the stable 5.x range; rustaceanvim follows neovim's lsp API closely.
   { src = 'https://github.com/mrcjkb/rustaceanvim', version = vim.version.range '5.*' },
-}
+}, { load = true })
 -- rustaceanvim is a "plugin, not a plugin": no require().setup{}. It activates
 -- itself for Rust filetypes once installed and vim.g.rustaceanvim is set above.
 
