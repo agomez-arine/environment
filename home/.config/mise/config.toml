@@ -54,7 +54,7 @@ mas = "latest"
 git-lfs = "latest"
 git-filter-repo = "latest"
 "npm:@gcavanunez/slinky" = "0.2.1"
-"npm:@opencode/browse" = "0.0.16"
+"npm:@opencode/browse" = "0.1.5"
 rust = "stable"
 
 [settings]
