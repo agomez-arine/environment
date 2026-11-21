@@ -10,13 +10,13 @@ url = "https://github.com/nektos/act/releases/download/v0.2.89/act_Darwin_arm64.
 url_api = "https://api.github.com/repos/nektos/act/releases/assets/434891257"
 
 [[tools.atuin]]
-version = "18.22.0"
+version = "18.23.0"
 backend = "aqua:atuinsh/atuin"
 
 [tools.atuin."platforms.macos-arm64"]
-checksum = "sha256:5e6e525f60147351f114397e7f09aeded87f302e99ef83a5eee74c524b805812"
-url = "https://github.com/atuinsh/atuin/releases/download/v18.22.0/atuin-aarch64-apple-darwin.tar.gz"
-url_api = "https://api.github.com/repos/atuinsh/atuin/releases/assets/553690857"
+checksum = "sha256:c988be1cde19cd7295ce64bc8b955d42fb1855e5227cb640c87fc09c8408c3fc"
+url = "https://github.com/atuinsh/atuin/releases/download/v18.23.0/atuin-aarch64-apple-darwin.tar.gz"
+url_api = "https://api.github.com/repos/atuinsh/atuin/releases/assets/580134148"
 provenance = "github-attestations"
 
 [[tools.awscli]]
@@ -34,6 +34,7 @@ backend = "aqua:sharkdp/bat"
 [tools.bat."platforms.macos-arm64"]
 checksum = "sha256:e30beff26779c9bf60bb541e1d79046250cb74378f2757f8eb250afddb19e114"
 url = "https://github.com/sharkdp/bat/releases/download/v0.26.1/bat-v0.26.1-aarch64-apple-darwin.tar.gz"
+url_api = "https://api.github.com/repos/sharkdp/bat/releases/assets/323548442"
 
 [[tools.bun]]
 version = "1.4.2"
@@ -44,13 +45,13 @@ checksum = "sha256:90987a3a16d7db556d886ac3d551e7b6d3edf0a1cf43acaed622e8676be1d
 url = "https://github.com/oven-sh/bun/releases/download/bun-v1.4.2/bun-darwin-aarch64.zip"
 
 [[tools.claude-code]]
-version = "2.1.272"
+version = "2.1.325"
 backend = "aqua:anthropics/claude-code"
 
 [tools.claude-code."platforms.macos-arm64"]
-checksum = "sha256:3254b8926b112e5af92dbb9c3840fb33187678c9638807e31f7f9b100bc8c6d5"
-url = "https://github.com/anthropics/claude-code/releases/download/v2.1.272/claude-darwin-arm64.tar.gz"
-url_api = "https://api.github.com/repos/anthropics/claude-code/releases/assets/564448719"
+checksum = "sha256:b0dc23f2d8c3ef55b2b22f03ef204e98b06b22b6c51a15b66d263b13442c4e03"
+url = "https://github.com/anthropics/claude-code/releases/download/v2.1.325/claude-darwin-arm64.tar.gz"
+url_api = "https://api.github.com/repos/anthropics/claude-code/releases/assets/745018486"
 
 [[tools.delta]]
 version = "0.19.2"
@@ -59,6 +60,7 @@ backend = "aqua:dandavison/delta"
 [tools.delta."platforms.macos-arm64"]
 checksum = "sha256:9be36612a5a13e9e386dc498fb8e50dc87c72ee42b63db0ea05b32f99a72a69a"
 url = "https://github.com/dandavison/delta/releases/download/0.19.2/delta-0.19.2-aarch64-apple-darwin.tar.gz"
+url_api = "https://api.github.com/repos/dandavison/delta/releases/assets/383662310"
 
 [[tools.direnv]]
 version = "2.37.1"
@@ -67,6 +69,7 @@ backend = "aqua:direnv/direnv"
 [tools.direnv."platforms.macos-arm64"]
 checksum = "sha256:4f569f3a36732bfd8b8fea7bfcc6ad87a59745c109022164d0ca4832451d5369"
 url = "https://github.com/direnv/direnv/releases/download/v2.37.1/direnv.darwin-arm64"
+url_api = "https://api.github.com/repos/direnv/direnv/releases/assets/274610544"
 
 [[tools.dust]]
 version = "1.2.5"
@@ -138,6 +141,7 @@ backend = "aqua:gitleaks/gitleaks"
 [tools.gitleaks."platforms.macos-arm64"]
 checksum = "sha256:b40ab0ae55c505963e365f271a8d3846efbc170aa17f2607f13df610a9aeb6a5"
 url = "https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_darwin_arm64.tar.gz"
+url_api = "https://api.github.com/repos/gitleaks/gitleaks/releases/assets/378332059"
 
 [[tools.go]]
 version = "1.27.1"
@@ -163,6 +167,16 @@ backend = "aqua:sharkdp/hyperfine"
 [tools.hyperfine."platforms.macos-arm64"]
 checksum = "sha256:f58d0b90993fadfa122a351428c469ce24afef3865f027f0e6e86f0830d088f1"
 url = "https://github.com/sharkdp/hyperfine/releases/download/v1.20.0/hyperfine-v1.20.0-x86_64-apple-darwin.tar.gz"
+url_api = "https://api.github.com/repos/sharkdp/hyperfine/releases/assets/317832526"
+
+[[tools.jless]]
+version = "0.9.0"
+backend = "aqua:PaulJuliusMartinez/jless"
+
+[tools.jless."platforms.macos-arm64"]
+checksum = "sha256:1967568762e44d3a5a7b09211c55ff9680419878a5a7045876d2cc6870e40390"
+url = "https://github.com/PaulJuliusMartinez/jless/releases/download/v0.9.0/jless-v0.9.0-aarch64-apple-darwin.zip"
+url_api = "https://api.github.com/repos/PaulJuliusMartinez/jless/releases/assets/117306820"
 
 [[tools.jq]]
 version = "1.8.2"
@@ -227,25 +241,31 @@ backend = "aqua:mas-cli/mas"
 [tools.mas."platforms.macos-arm64"]
 checksum = "sha256:bc218a854c85d9e1c95496a96b26287bb66056b95688b90f91d04fa62ed21b75"
 url = "https://github.com/mas-cli/mas/releases/download/v7.0.0/mas-7.0.0-arm64.pkg"
+url_api = "https://api.github.com/repos/mas-cli/mas/releases/assets/411752346"
 
 [[tools.neovim]]
 version = "0.12.5"
 backend = "vfox:mise-plugins/vfox-neovim"
 
 [tools.neovim."platforms.macos-arm64"]
+checksum = "sha256:65fb000099e47ca1b762584c484cc833f40e30851a0ec450d4174e16317c1f9b"
 url = "https://github.com/neovim/neovim/releases/download/v0.12.5/nvim-macos-arm64.tar.gz"
 
 [[tools.node]]
-version = "22.14.0"
+version = "26.12.0"
 backend = "core:node"
 
 [tools.node."platforms.macos-arm64"]
-checksum = "sha256:e9404633bc02a5162c5c573b1e2490f5fb44648345d64a958b17e325729a5e42"
-url = "https://nodejs.org/dist/v22.14.0/node-v22.14.0-darwin-arm64.tar.gz"
+checksum = "sha256:2a154d4a5458930e0a2d6a1ecf64eddf5a2b3e1c13636b609c2ecb042e8c4553"
+url = "https://nodejs.org/dist/v26.12.0/node-v26.12.0-darwin-arm64.tar.gz"
 
 [[tools."npm:@gcavanunez/slinky"]]
 version = "0.2.1"
 backend = "npm:@gcavanunez/slinky"
+
+[[tools."npm:@opencode/browse"]]
+version = "0.0.16"
+backend = "npm:@opencode/browse"
 
 [[tools.opencode]]
 version = "2.3.2"
@@ -276,30 +296,12 @@ url_api = "https://api.github.com/repos/pnpm/pnpm/releases/assets/565468070"
 provenance = "github-attestations"
 
 [[tools.python]]
-version = "3.10.21"
+version = "3.14.7"
 backend = "core:python"
 
 [tools.python."platforms.macos-arm64"]
-checksum = "sha256:c2ddcefee6ae51286001dc22320434676adcc89362330823b409eac51a101a4b"
-url = "https://github.com/astral-sh/python-build-standalone/releases/download/20260901/cpython-3.10.21+20260901-aarch64-apple-darwin-install_only_stripped.tar.gz"
-provenance = "github-attestations"
-
-[[tools.python]]
-version = "3.11.16"
-backend = "core:python"
-
-[tools.python."platforms.macos-arm64"]
-checksum = "sha256:768f05cf200273bbdda9a5955a5a6892a4b22f2a0b1e4b0a9160f5c7fce86816"
-url = "https://github.com/astral-sh/python-build-standalone/releases/download/20260901/cpython-3.11.16+20260901-aarch64-apple-darwin-install_only_stripped.tar.gz"
-provenance = "github-attestations"
-
-[[tools.python]]
-version = "3.12.14"
-backend = "core:python"
-
-[tools.python."platforms.macos-arm64"]
-checksum = "sha256:81a359f1cfadd4da11766534c5913791cea55f26e1bb902cacd2a531bb1e4b2b"
-url = "https://github.com/astral-sh/python-build-standalone/releases/download/20260901/cpython-3.12.14+20260901-aarch64-apple-darwin-install_only_stripped.tar.gz"
+checksum = "sha256:4632cb1a6edad9e73d3c81b6d2e69131637d995173e3e85005df14102b0592ba"
+url = "https://github.com/astral-sh/python-build-standalone/releases/download/20260901/cpython-3.14.7+20260901-aarch64-apple-darwin-install_only_stripped.tar.gz"
 provenance = "github-attestations"
 
 [[tools.python]]
@@ -312,12 +314,30 @@ url = "https://github.com/astral-sh/python-build-standalone/releases/download/20
 provenance = "github-attestations"
 
 [[tools.python]]
-version = "3.14.7"
+version = "3.12.14"
 backend = "core:python"
 
 [tools.python."platforms.macos-arm64"]
-checksum = "sha256:4632cb1a6edad9e73d3c81b6d2e69131637d995173e3e85005df14102b0592ba"
-url = "https://github.com/astral-sh/python-build-standalone/releases/download/20260901/cpython-3.14.7+20260901-aarch64-apple-darwin-install_only_stripped.tar.gz"
+checksum = "sha256:81a359f1cfadd4da11766534c5913791cea55f26e1bb902cacd2a531bb1e4b2b"
+url = "https://github.com/astral-sh/python-build-standalone/releases/download/20260901/cpython-3.12.14+20260901-aarch64-apple-darwin-install_only_stripped.tar.gz"
+provenance = "github-attestations"
+
+[[tools.python]]
+version = "3.11.16"
+backend = "core:python"
+
+[tools.python."platforms.macos-arm64"]
+checksum = "sha256:768f05cf200273bbdda9a5955a5a6892a4b22f2a0b1e4b0a9160f5c7fce86816"
+url = "https://github.com/astral-sh/python-build-standalone/releases/download/20260901/cpython-3.11.16+20260901-aarch64-apple-darwin-install_only_stripped.tar.gz"
+provenance = "github-attestations"
+
+[[tools.python]]
+version = "3.10.21"
+backend = "core:python"
+
+[tools.python."platforms.macos-arm64"]
+checksum = "sha256:c2ddcefee6ae51286001dc22320434676adcc89362330823b409eac51a101a4b"
+url = "https://github.com/astral-sh/python-build-standalone/releases/download/20260901/cpython-3.10.21+20260901-aarch64-apple-darwin-install_only_stripped.tar.gz"
 provenance = "github-attestations"
 
 [[tools.ripgrep]]
@@ -340,6 +360,7 @@ backend = "aqua:chmln/sd"
 [tools.sd."platforms.macos-arm64"]
 checksum = "sha256:4bd3c09226376ca0a1d69589c91e86276fae36c5fbaaee669afce583f6682030"
 url = "https://github.com/chmln/sd/releases/download/v1.1.0/sd-v1.1.0-aarch64-apple-darwin.tar.gz"
+url_api = "https://api.github.com/repos/chmln/sd/releases/assets/362325451"
 
 [[tools.shellcheck]]
 version = "0.11.0"
@@ -348,6 +369,7 @@ backend = "aqua:koalaman/shellcheck"
 [tools.shellcheck."platforms.macos-arm64"]
 checksum = "sha256:56affdd8de5527894dca6dc3d7e0a99a873b0f004d7aabc30ae407d3f48b0a79"
 url = "https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.darwin.aarch64.tar.xz"
+url_api = "https://api.github.com/repos/koalaman/shellcheck/releases/assets/279056932"
 
 [[tools.shfmt]]
 version = "3.14.1"
@@ -410,6 +432,7 @@ backend = "aqua:tmux/tmux-builds"
 [tools.tmux."platforms.macos-arm64"]
 checksum = "sha256:0a763dd0380aa980d239509654da1bc7455843706a3c050f6709c8cd2e13d12d"
 url = "https://github.com/tmux/tmux-builds/releases/download/v3.7c/tmux-3.7c-macos-arm64.tar.gz"
+url_api = "https://api.github.com/repos/tmux/tmux-builds/releases/assets/528734861"
 
 [[tools.tree-sitter]]
 version = "0.27.0"
@@ -431,12 +454,13 @@ url = "https://github.com/typst/typst/releases/download/v0.15.1/typst-aarch64-ap
 url_api = "https://api.github.com/repos/typst/typst/releases/assets/480299147"
 
 [[tools.uv]]
-version = "0.12.5"
+version = "0.13.4"
 backend = "aqua:astral-sh/uv"
 
 [tools.uv."platforms.macos-arm64"]
-checksum = "sha256:5bb0e5fe008a773c3dbcb97ff79cd89e1241464fe9d2f986d52ad8f1b037bd62"
-url = "https://github.com/astral-sh/uv/releases/download/0.12.5/uv-aarch64-apple-darwin.tar.gz"
+checksum = "sha256:e0b1d4743ce64c55d9f0f4a444afa6b81125680070ee04e853fcd0f6c1ebf8f1"
+url = "https://github.com/astral-sh/uv/releases/download/0.13.4/uv-aarch64-apple-darwin.tar.gz"
+url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/659693291"
 provenance = "github-attestations"
 
 [[tools.yazi]]

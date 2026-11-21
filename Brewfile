@@ -3,6 +3,8 @@
 # User-managed apps cannot write to /Applications through the IT sudo gate.
 cask_args appdir: "~/Applications"
 
+tap "anomalyco/tap"
+
 # Native tools and libraries that mise should not own.
 brew "btop"
 brew "tree"
@@ -27,6 +29,9 @@ cask "font-jetbrains-mono-nerd-font"
 cask "skim"
 cask "kiro"
 cask "kiro-cli"
+cask "tldraw"
+cask "anomalyco/tap/hex"
+cask "shottr"
 
 # Installed by IT/Jamf, not Homebrew:
 # maccy, docker, google-chrome, google-drive, slack, xcode, cursor,
