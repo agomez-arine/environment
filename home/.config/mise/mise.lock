@@ -248,13 +248,12 @@ version = "0.2.1"
 backend = "npm:@gcavanunez/slinky"
 
 [[tools.opencode]]
-version = "1.18.31"
+version = "2.3.2"
 backend = "aqua:anomalyco/opencode"
 
 [tools.opencode."platforms.macos-arm64"]
-checksum = "sha256:caf7f31fa1aec2353ea859d4ef9ab824c6273d941b016e88d51193fa3028d34e"
-url = "https://github.com/anomalyco/opencode/releases/download/v1.18.31/opencode-darwin-arm64.zip"
-url_api = "https://api.github.com/repos/anomalyco/opencode/releases/assets/563876553"
+checksum = "sha256:31ab5a06a29edc7e49b895f35c2b64ebfe7c7f0437b0f2581b006efcd79fee1a"
+url = "https://opencode.ai/files/bin/2.3.2/opencode-darwin-arm64.zip"
 
 [[tools.pandoc]]
 version = "3.11"
