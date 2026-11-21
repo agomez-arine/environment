@@ -51,12 +51,14 @@ read only. The write tools are also denied in settings.
 ## Browser screenshots — save to file, don't attach inline
 
 When using the chrome-devtools `take_screenshot` tool, always pass `filePath`
-(e.g. under `/tmp/claude/`) so the image is written to disk instead of being
-attached to the conversation. An inline image that gets rejected stays in the
-session history and breaks every later request.
+(e.g. under `/tmp/claude/`), and when using the browse `screenshot` tool,
+always pass `path`, so the image is written to disk instead of being attached
+to the conversation. An inline image that gets rejected stays in the session
+history and breaks every later request.
 
-- Prefer `take_snapshot` (text/a11y tree) or `evaluate_script` for checking
-  layout and content; only screenshot when a visual is truly needed.
+- Prefer `take_snapshot` / browse `snapshot` (text/a11y tree) or
+  `evaluate_script` / browse `eval` for checking layout and content; only
+  screenshot when a visual is truly needed.
 - Tell me the saved path so I can open it myself.
 
 ## pstack
